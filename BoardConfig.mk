@@ -12,22 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# inherit from the common rhine definitions
--include device/sony/rhine-common/BoardConfigCommon.mk
+# inherit from Sony common
+include device/sony/common/BoardConfigCommon.mk
 
-# inherit from the proprietary version
-#-include vendor/sony/honami/BoardConfigVendor.mk
+# inherit from qcom-common
+include device/sony/qcom-common/BoardConfigCommon.mk
 
 # Assert
-TARGET_OTA_ASSERT_DEVICE := L39h,C6902,C6903,C6906,C6843,honami
+TARGET_OTA_ASSERT_DEVICE := D2302,D2303,D2305,D2306,D2316,eagle
 
-TARGET_SPECIFIC_HEADER_PATH += device/sony/honami/include
+TARGET_SPECIFIC_HEADER_PATH += device/sony/eagle/include
 
-BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/sony/honami/bluetooth
+BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/sony/eagle/bluetooth
 
 # Kernel properties
-TARGET_KERNEL_CONFIG := cm_rhine_honami_row_defconfig
+TARGET_KERNEL_SOURCE := kernel/sony/msm8226
+TARGET_KERNEL_CONFIG :=  cyanogenmod_eagle_defconfig
 
+# FIX ME!
 # Partition information
 BOARD_VOLD_MAX_PARTITIONS := 26
 

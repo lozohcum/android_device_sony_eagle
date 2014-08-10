@@ -1,3 +1,5 @@
+#FIXME!
+
 # mount point	fstype	device			[device2]   fstype2
 
 /boot		emmc	/dev/block/platform/msm_sdcc.1/by-name/boot
