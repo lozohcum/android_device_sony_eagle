@@ -30,7 +30,7 @@ TARGET_KERNEL_CONFIG := eagle_lte_defconfig
 # Platform
 TARGET_BOOTLOADER_BOARD_NAME := MSM8226
 TARGET_BOARD_PLATFORM := msm8226
-BOARD_VENDOR_PLATFORM := yukon
+BOARD_VENDOR_PLATFORM := eagle
 
 # Architecture
 # Purposefully krait due to lack of cortex-a7 optimizations in clang
