@@ -1,0 +1,19 @@
+[
+ {
+   "repository": "android_kernel_msm_caf",
+   "target_path": "kernel/sony/eagle",
+   "branch": "KK_M2"
+ }, {
+   "repository": "proprietary_vendor_sony",
+   "target_path": "vendor/sony",
+   "branch": "cm-11.0"
+ }, {
+   "repository": "proprietary_vendor_sony_eagle",
+   "target_path": "vendor/sony/eagle",
+   "branch": "android-4.4"
+ }, {
+   "repository": "android_device_sony_common",
+   "target_path": "device/sony/common",
+   "branch": "cm-11.0"
+ }
+]
