@@ -67,6 +67,12 @@ PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/system/usr/keylayout/qwerty.kl:system/usr/keylayout/qwerty.kl \
     $(COMMON_PATH)/rootdir/system/usr/keylayout/synaptics_rmi4_i2c.kl:system/usr/keylayout/synaptics_rmi4_i2c.kl
 
+# Touchpad
+# Touchpad
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/rootdir/system/usr/idc/qwerty2.idc:system/usr/idc/qwerty2.idc \
+    $(LOCAL_PATH)/rootdir/system/usr/idc/qwerty.idc:system/usr/idc/qwerty.idc
+
 # Device specific part for two-stage boot
 PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/recovery/bootrec-device:recovery/bootrec-device
