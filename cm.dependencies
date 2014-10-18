@@ -11,6 +11,7 @@
    "repository": "proprietary_vendor_sony_eagle",
    "target_path": "vendor/sony/eagle",
    "branch": "cm-11.0"
+ },
   {
     "remote": "github",
     "account": "CyanogenMod",
