@@ -31,17 +31,7 @@ TARGET_KERNEL_CONFIG := eagle_lte_defconfig
 TARGET_BOOTLOADER_BOARD_NAME := MSM8226
 TARGET_BOARD_PLATFORM := msm8226
 BOARD_VENDOR_PLATFORM := eagle
-
-# Architecture
-TARGET_ARCH := arm
-TARGET_ARCH_VARIANT := armv7-a-neon
-TARGET_CPU_ABI := armeabi-v7a
-TARGET_CPU_ABI2 := armeabi
 TARGET_CPU_VARIANT := krait
-
-# I'm not sure about SMP in CPU
-# but probably we have it
-# TARGET_CPU_SMP := true
 
 # Flags
 TARGET_GLOBAL_CFLAGS += -mfpu=neon-vfpv4 -mfloat-abi=softfp
@@ -59,7 +49,6 @@ BOARD_KERNEL_SEPARATED_DT := true
 BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_PAGESIZE := 2048
 
-
 # Qualcomm
 TARGET_QCOM_DISPLAY_VARIANT := caf-new
 TARGET_QCOM_MEDIA_VARIANT := caf-new
@@ -68,7 +57,6 @@ BOARD_USES_QCOM_HARDWARE := true
 TARGET_USES_QCOM_BSP := true
 BOARD_USES_QC_TIME_SERVICES := true
 TARGET_ENABLE_QC_AV_ENHANCEMENTS := true
-
 
 # Audio
 BOARD_USES_ALSA_AUDIO := true
@@ -143,4 +131,3 @@ DEVICE_RESOLUTION := 540x960
 
 # Skip chromium build
 PRODUCT_PREBUILT_WEBVIEWCHROMIUM := true
-
