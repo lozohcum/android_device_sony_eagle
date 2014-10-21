@@ -11,10 +11,6 @@
    "repository": "proprietary_vendor_sony_eagle",
    "target_path": "vendor/sony/eagle",
    "branch": "cm-11.0"
- }, {
-   "repository": "philz_touch_cwm6",
-   "target_path": "bootable/recovery-philz",
-   "branch": "cm-11.0"
  },
   {
     "remote": "github",
