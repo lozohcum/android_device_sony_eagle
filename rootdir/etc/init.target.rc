@@ -27,10 +27,19 @@
 #
 #
 
-
 on early-init
     mkdir /firmware 0771 system system
     symlink /data/tombstones /tombstones
+#[VY52] ==> CCI FLEX
+    mkdir /ftma 0771 system system
+#[VY52] <== CCI FLEX
+#[VY5X]S AlexKuan Bug_798 Do mount LTALabel
+    mkdir /lta-label 0771 system system
+#[VY5X]E AlexKuan Bug_798 Do mount LTALabel
+
+on init
+    # create directory for scd
+    mkdir /dev/socket/scd 0755 system system
 
 on fs
     mount_all fstab.qcom
@@ -39,48 +48,76 @@ on fs
     # these partition flashed on the device. Failure to mount any partition in fstab file
     # results in failure to launch late-start class.
 
+    wait /dev/block/platform/msm_sdcc.1/by-name/cache
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/cache /cache nosuid nodev barrier=1
+
     wait /dev/block/platform/msm_sdcc.1/by-name/persist
     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persist /persist nosuid nodev barrier=1
 
-    wait /dev/block/platform/msm_sdcc.1/by-name/modem
-    exec /system/bin/resize2fs /dev/block/platform/msm_sdcc.1/by-name/modem
-    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/modem /firmware ro nosuid nodev barrier=0
-    write /sys/kernel/boot_adsp/boot 1
+#[VY5X]S AlexKuan Bug_798 Do mount LTALabel
+    wait /dev/block/platform/msm_sdcc.1/by-name/LTALabel
+    exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/LTALabel
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/LTALabel /lta-label nosuid nodev barrier=1
+#[VY5X]E AlexKuan Bug_798 Do mount LTALabel
 
-    # activate zram
-    swapon_all fstab.qcom
-    write /proc/sys/vm/page-cluster 0
+#[VY52] ==> CCI FLEX
+    exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/ftma  
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/ftma /ftma nosuid nodev barrier=1  
+    chmod 0750 /ftma/cci-flex.sh  
+    chmod 0750 /ftma/custom-flex.sh 
+#[VY52] <== CCI FLEX
+    wait /dev/block/platform/msm_sdcc.1/by-name/modem
+    mount vfat /dev/block/platform/msm_sdcc.1/by-name/modem /firmware ro shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337
+
+    # SONY: Start the TrimArea Daemon. It must be started before fota-ua
+    wait /dev/block/platform/msm_sdcc.1/by-name/TA
+    class_start trimarea
+    exec /sbin/wait4tad_static
+    exec /sbin/check_recovery
+    exec /sbin/fota-ua c
+
+    # SONY: Start early TA-users
+    exec /system/bin/taimport
+
+on chgonly-fs
+    mount_all fstab.qcom
+
+on early-boot
+    start sct_service
+    start ta_qmi_service
+    exec /sbin/check_recovery locale
 
 on post-fs-data
     mkdir /data/tombstones 0771 system system
     mkdir /tombstones/modem 0771 system system
+    mkdir /data/smime 0770 root smime_keystore
 
+    # Enable Sony RIC
+    mount securityfs securityfs /sys/kernel/security nosuid nodev noexec
+    write /sys/kernel/security/sony_ric/enable 1
+
+# import cne init file
 on post-fs
-    restorecon /data/media /data/media/0 /data/media/legacy /data/media/obb
-    # Mount PDS
-    wait /dev/block/platform/msm_sdcc.1/by-name/pds
-    exec /system/etc/mount_pds.sh
+    export LD_PRELOAD /vendor/lib/libNimsWrap.so
+    # Change to socket location on libkeyctrl/suntory for /data encryption
+    mkdir /dev/socket/suntory 0755 system system
+    mkdir /data/credmgr 0700 system system
+
+on property:gsm.nitz.time=*
+   exec /system/bin/scdnotifier nitz
 
 
 on boot
+    insmod /system/lib/modules/adsprpc.ko
     # Enable writing to led blink node from userspace
     chown system system /sys/class/leds/red/blink
     chown system system /sys/class/leds/green/blink
     # Enable writing to brightness node under torch-light from userspace
     chown system system /sys/class/leds/torch-light/brightness
-    chmod 0666 /sys/class/leds/torch-light/brightness
 
-    # vibrator intensity
-    chown system system /sys/devices/virtual/timed_output/vibrator/vtg_level
-
-    # display color calibration
-    chown system system /sys/devices/platform/kcal_ctrl.0/kcal
-    chown system system /sys/devices/platform/kcal_ctrl.0/kcal_ctrl
-
-    # setup trace dir
-    mkdir /cache/trace 0777 root shell
-    chown root shell /cache/trace
-    chmod 0777 /cache/trace
+#Start the qcom-system-daemon service
+service qcomsysd /system/bin/qcom-system-daemon
+    class main
 
 #start camera server as daemon
 service qcamerasvr /system/bin/mm-qcamera-daemon
@@ -100,9 +137,8 @@ service time_daemon /system/bin/time_daemon
    user root
    group root
 
-service mpdecision /system/bin/mpdecision --avg_comp
+service mpdecision /system/bin/mpdecision --no_sleep --avg_comp
    user root
-   group root system
    disabled
 
 #start GNSS/Sensor interface daemon
@@ -111,10 +147,11 @@ service gsiff_daemon /system/bin/gsiff_daemon
    user system
    group gps net_raw
 
-service thermal-engine /system/bin/thermal-engine -c /etc/thermal-engine-8226.conf
-   class main
-   user root
-   group root
+# Disable thermal-engine if PSM exist
+#service thermal-engine /system/bin/thermal-engine
+#   class main
+#   user root
+#   group root
 
 service qrngd /system/bin/qrngd -f
     class main
@@ -144,12 +181,38 @@ service audiod /system/bin/audiod
 
 service adsprpcd /system/bin/adsprpcd
    class main
-   user media
-   group media
+   user media system
+   group media system
+
+service imsqmidaemon /system/bin/imsqmidaemon
+    class main
+    user system
+    socket ims_qmid stream 0660 system radio
+    group ims radio net_raw log qcom_diag
+
+service imsdatadaemon /system/bin/imsdatadaemon
+    class main
+    user system
+    socket ims_datad stream 0660 system radio
+    group system ims wifi radio inet net_raw log qcom_diag net_admin
+    disabled
+
+on property:sys.ims.QMI_DAEMON_STATUS=1
+    start imsdatadaemon
+
+service ims_rtp_daemon /system/bin/ims_rtp_daemon
+   class main
+   user system
+   socket ims_rtpd stream 0660 system ims
+   group ims net_raw diag qcom_diag log
+   disabled
+
+on property:sys.ims.DATA_DAEMON_STATUS=1
+    start ims_rtp_daemon
 
 service wcnss-service /system/bin/wcnss_service
    class late_start
-   user root
+   user system
    group system wifi
    oneshot
 
@@ -162,10 +225,81 @@ service ppd /system/bin/mm-pp-daemon
 on property:init.svc.surfaceflinger=stopped
     stop ppd
 
-service mmi-ril-daemon /system/bin/rild
-    class main
-    socket rild stream 660 root radio
-    socket rild-debug stream 660 radio system
-    socket cutback stream 660 media radio
+
+# SONY: TrimArea Daemon
+# Last 2 args: start block(blk size 128k), number of blocks(partitionsize(kb)/128(kb))
+service tad_static /sbin/tad_static /dev/block/platform/msm_sdcc.1/by-name/TA 0,16
     user root
-    group radio cache inet misc audio sdcard_rw qcom_oncrpc qcom_diag log net_raw diag
+    group root
+    socket tad stream 0660 system system
+    class trimarea
+
+service updatemiscta /system/bin/updatemiscta
+    class main
+    user root
+    oneshot
+
+# Trim Area QMI service
+service ta_qmi_service /system/bin/ta_qmi_service
+    user root
+    disabled
+
+# Secure Config Transfer service
+service sct_service /system/bin/sct_service
+    user root
+    disabled
+service cci_tatest /system/bin/cci_tatest
+    class main
+    user root
+    oneshot
+
+
+# Start suntrold
+service suntrold /system/bin/suntrold
+    user system
+    group system
+    oneshot
+    class main
+
+# Start RIC
+service ric /sbin/ric
+    user root
+    group root
+    oneshot
+    class main
+
+# Start Credential manager daemon
+service credmgrd /system/bin/credmgrd
+    user system
+    group system
+    socket credmgr stream 0660 system system
+    class main
+
+service scd /system/bin/scd
+    class main
+    user system
+    group system
+
+# Sony: FOTA trigger
+service fota-trigger /system/bin/fota-trigger
+    group cache
+    disabled
+
+# Sony: Start system_monitor
+service system_monitor /system/bin/system_monitor
+    socket sysmon stream 0660 root system
+    class core
+    user root
+    disabled
+
+on property:ro.somc.thermal=system_monitor
+    start system_monitor
+
+# display color calibration
+service display_cc /system/bin/display_color_calib
+    class main
+    oneshot
+    disabled
+
+on property:dev.bootcomplete=1
+    start fota-trigger

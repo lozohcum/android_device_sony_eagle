@@ -36,7 +36,7 @@
 # This script will get called after post bootup.
 
 target="$1"
-serialno=`getprop ro.serialno`
+serialno="$2"
 
 btsoc=""
 
@@ -76,17 +76,15 @@ trigger_wcnss()
             echo "No WCNSS device node detected"
             ;;
     esac
-    validSerial=`getprop ro.serialno | md5sum`
-    validSerial=${validSerial:0:8}
+
     # Plumb down the device serial number
     if [ -f /sys/devices/*wcnss-wlan/serial_number ]; then
         cd /sys/devices/*wcnss-wlan
-        echo $validSerial > serial_number
+        echo $serialno > serial_number
         cd /
     elif [ -f /sys/devices/platform/wcnss_wlan.0/serial_number ]; then
-        echo $validSerial > /sys/devices/platform/wcnss_wlan.0/serial_number
+        echo $serialno > /sys/devices/platform/wcnss_wlan.0/serial_number
     fi
-
 }
 
 
@@ -253,22 +251,33 @@ case "$target" in
       ln -s /system/lib/modules/pronto/pronto_wlan.ko \
 		/system/lib/modules/wlan.ko
       # Populate the writable driver configuration file
-#      if [ ! -e /data/misc/wifi/WCNSS_qcom_cfg.ini ]; then
-#          cp /system/etc/wifi/WCNSS_qcom_cfg.ini \
-#		/data/misc/wifi/WCNSS_qcom_cfg.ini
-#          chown -h system:wifi /data/misc/wifi/WCNSS_qcom_cfg.ini
-#          chmod -h 660 /data/misc/wifi/WCNSS_qcom_cfg.ini
-#      fi
+      if [ ! -e /data/misc/wifi/WCNSS_qcom_cfg.ini ]; then
+          cp /system/etc/wifi/WCNSS_qcom_cfg.ini \
+		/data/misc/wifi/WCNSS_qcom_cfg.ini
+          chown -h system:wifi /data/misc/wifi/WCNSS_qcom_cfg.ini
+          chmod -h 660 /data/misc/wifi/WCNSS_qcom_cfg.ini
+      fi
+
+      # [CCI] Bug#505 Wi-Fi config file checking for T1
+      cfg_size=`ls -s /data/misc/wifi/WCNSS_qcom_cfg.ini`
+
+      if [ ! -e /data/misc/wifi/WCNSS_qcom_cfg.ini ] || [[ $cfg_size == 0* ]]; then
+          cp /system/etc/wifi/WCNSS_qcom_cfg.ini \
+		/data/misc/wifi/WCNSS_qcom_cfg.ini
+          chown -h system:wifi /data/misc/wifi/WCNSS_qcom_cfg.ini
+          chmod -h 660 /data/misc/wifi/WCNSS_qcom_cfg.ini
+      fi
 
       # The property below is used in Qcom SDK for softap to determine
       # the wifi driver config file
-      setprop wlan.driver.config /system/etc/firmware/wlan/prima/WCNSS_qcom_cfg.ini
+      setprop wlan.driver.config /data/misc/wifi/WCNSS_qcom_cfg.ini
 
       # Use different wpa_supplicant.conf template between wcn driver
       # and ath6kl driver
-      #rm /system/etc/wifi/wpa_supplicant.conf
-      #ln -s /system/etc/wifi/wpa_supplicant_wcn.conf \
-       #         /system/etc/wifi/wpa_supplicant.conf
+      # [CEI][KK-Bug483] disable Qcom's mechanism here because we need a real file
+      # rm /system/etc/wifi/wpa_supplicant.conf
+      # ln -s /system/etc/wifi/wpa_supplicant_wcn.conf \
+                # /system/etc/wifi/wpa_supplicant.conf
 
       # Trigger WCNSS platform driver
       trigger_wcnss &

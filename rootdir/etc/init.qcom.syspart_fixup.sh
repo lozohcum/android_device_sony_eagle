@@ -60,11 +60,6 @@ if [ -f /system/etc/init.qcom.mdm_links.sh ]; then
   /system/bin/sh /system/etc/init.qcom.mdm_links.sh
 fi
 
-# Run thermal script
-if [ -f /system/etc/init.qcom.thermal_conf.sh ]; then
-  /system/bin/sh /system/etc/init.qcom.thermal_conf.sh
-fi
-
 # Run wifi script
 if [ -f /system/etc/init.qcom.wifi.sh ]; then
   /system/bin/sh /system/etc/init.qcom.wifi.sh "$target" "$serial"
@@ -75,8 +70,11 @@ if [ -f /system/etc/init.qcom.sensor.sh ]; then
   /system/bin/sh /system/etc/init.qcom.sensor.sh
 fi
 
-setprop qcom.audio.init complete
-
+#[VY52] ==> CCI FLEX
+if [ -f /ftma/cci-flex.sh ]; then  
+  /system/bin/sh /ftma/cci-flex.sh  
+fi  
+#[VY52] <== CCI FLEX
 touch /system/etc/boot_fixup
 
 if $mount_needed ;then
