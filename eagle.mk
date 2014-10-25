@@ -110,10 +110,6 @@ PRODUCT_PACKAGES += \
     memtrack.msm8226 \
     liboverlay
 
-# Camera
-PRODUCT_PACKAGES += \
-    CameraWorkaround
-
 # Filesystem management tools
 PRODUCT_PACKAGES += \
     e2fsck
