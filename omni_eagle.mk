@@ -12,14 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Inherit from eagle device
-$(call inherit-product, device/sony/eagle/full_eagle.mk)
+# Screen resoultion in Pixels.
+TARGET_SCREEN_HEIGHT := 960
+TARGET_SCREEN_WIDTH := 540
 
-# Inherit OMNI common Phone stuff.
-$(call inherit-product, vendor/omni/config/gsm.mk)
+# Torch
+PRODUCT_PACKAGES := \
+    Torch
+
+#Add omni apns
+PRODUCT_COPY_FILES += \
+       vendor/omni/prebuilt/etc/apns-conf.xml:system/etc/apns-conf.xml
+
+# Inherit from those products. Most specific first.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+
+# Inherit from our omni product configuration
+$(call inherit-product, vendor/omni/config/common.mk)
+
+# Common Sony Resources
+$(call inherit-product, device/sony/common/resources.mk)
+
+# Inherit from eagle device
+$(call inherit-product, device/sony/eagle/eagle.mk)
 
 # Build fingerprints
 PRODUCT_BUILD_PROP_OVERRIDES += PRODUCT_NAME=D2303 BUILD_FINGERPRINT=Sony/D2303/D2303:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys PRIVATE_BUILD_DESC="D2303-user 4.4.2 18.3.C.0.37 2n9_bg release-keys"
 
+# Set those variables here to overwrite the inherited values.
 PRODUCT_NAME := omni_eagle
 PRODUCT_DEVICE := eagle
+PRODUCT_BRAND := Sony
+PRODUCT_MANUFACTURER := Sony
+PRODUCT_MODEL := Xperia M2 LTE
