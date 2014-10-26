@@ -90,12 +90,15 @@ PRODUCT_COPY_FILES += \
 
 # Audio
 PRODUCT_PACKAGES += \
-    audiod \
-    audio.a2dp.default \
+# Audio
+PRODUCT_PACKAGES += \
     audio.primary.msm8226 \
-    audio.r_submix.default \
+    audio_policy.msm8226 \
+    audio.a2dp.default \
     audio.usb.default \
-    audio_policy.msm8226
+    audio.r_submix.default \
+    libaudio-resampler \
+    tinymix
 
 PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/system/etc/audio_effects.conf:system/etc/audio_effects.conf \
