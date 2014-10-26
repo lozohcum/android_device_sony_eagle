@@ -103,6 +103,7 @@ PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/system/etc/mixer_paths.xml:system/etc/mixer_paths.xml \
 
 # Camera
+PRODUCT_PACKAGES += \
     camera.qcom
 
 # Display
