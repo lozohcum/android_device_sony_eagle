@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-USE_CAMERA_STUB := false
 
 # inherit from Sony common
 include device/sony/common/BoardConfigCommon.mk
@@ -71,9 +70,9 @@ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/sony/eagle/bluetooth
 BOARD_HAS_RIL_LEGACY_PAP := true
 
 # Camera
-USE_DEVICE_SPECIFIC_CAMERA := true
 COMMON_GLOBAL_CFLAGS += -DNEEDS_VECTORIMPL_SYMBOLS
-COMMON_GLOBAL_CFLAGS += -DSONY_CAM_PARAMS
+#BOARD_CAMERA_HAVE_ISO := true
+USE_DEVICE_SPECIFIC_CAMERA := true
 
 # Charger
 BOARD_CHARGER_ENABLE_SUSPEND := true
@@ -94,7 +93,7 @@ MAX_EGL_CACHE_SIZE := 2048*1024
 BOARD_NFC_CHIPSET := pn547
 
 #Radio
-#BOARD_HAVE_RADIO := true
+BOARD_HAVE_RADIO := true
 
 # WiFi
 WLAN_MODULES:
