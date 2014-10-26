@@ -82,6 +82,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     extract_elf_ramdisk
 
+# Custom dtb tool
+PRODUCT_PACKAGES += \
+    dtbToolM2
+
 # Sbin
 PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/charger:root/charger \
