@@ -124,6 +124,7 @@ PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/system/etc/init.qcom.fm.sh:system/etc/init.qcom.fm.sh
 
 # Gps
+PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/gps/flp.conf:system/etc/flp.conf \
     $(COMMON_PATH)/gps/gps.conf:system/etc/gps.conf \
     $(COMMON_PATH)/gps/izat.conf:system/etc/izat.conf \
