@@ -1,0 +1,47 @@
+From 73c5517fdd99d5ee2521f5bbecaa2f29590d8fae Mon Sep 17 00:00:00 2001
+From: galaxyfreak <marinspajic17@hotmail.com>
+Date: Tue, 28 Oct 2014 17:33:29 +0100
+Subject: [PATCH 04/11] Update android_filesystem_config.h
+
+Merge CM upstream:
+
+IMS-VT: Define IMS group.
+system: core: Add Sensors group
+core: Correct the sensors UID
+---
+ include/private/android_filesystem_config.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/include/private/android_filesystem_config.h b/include/private/android_filesystem_config.h
+index 3de4066..73522c2 100755
+--- a/include/private/android_filesystem_config.h
++++ b/include/private/android_filesystem_config.h
+@@ -100,6 +100,8 @@
+ #define AID_NET_BT_STACK  3008  /* bluetooth: access config files */
+ #define AID_QCOM_ONCRPC   3009  /* can read/write /dev/oncrpc files */
+ #define AID_QCOM_DIAG     3010  /* can read/write /dev/diag */
++#define AID_SENSORS       3011 /* access to /dev/socket/sensor_ctl_socket & QCCI/QCSI */
++#define AID_IMS           3012 /* can read/write /dev/socket/imsrtp */
+ 
+ #if defined(MOTOROLA_UIDS)
+ #define AID_MOT_OSH       5000  /* OSH */
+@@ -190,6 +192,7 @@ static const struct android_id_info android_ids[] = {
+     { "net_bw_acct",   AID_NET_BW_ACCT, },
+     { "qcom_oncrpc", AID_QCOM_ONCRPC, },
+     { "qcom_diag", AID_QCOM_DIAG, },
++    { "ims", AID_IMS, },
+     { "net_bt_stack",  AID_NET_BT_STACK, },
+ 
+ // SONY_UIDS
+@@ -211,7 +214,7 @@ static const struct android_id_info android_ids[] = {
+     { "mot_caif",  AID_MOT_CAIF, },
+     { "mot_dlna",  AID_MOT_DLNA, },
+ #endif
+-
++    { "sensors", AID_SENSORS, },
+     { "misc",          AID_MISC, },
+     { "nobody",        AID_NOBODY, },
+     { "theme_man", AID_THEMEMAN },
+-- 
+1.9.1
+

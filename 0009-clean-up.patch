@@ -1,0 +1,24 @@
+From 8f4b6a9759f3f0488f1ce9f2f520a1a4d5911493 Mon Sep 17 00:00:00 2001
+From: erikcas <erikcas1972@gmail.com>
+Date: Wed, 29 Oct 2014 19:28:21 +0100
+Subject: [PATCH 09/11] clean up
+
+Change-Id: I275a9caf53e9bfb67f31fb87387200432d3140b7
+---
+ eagle.mk | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/eagle.mk b/eagle.mk
+index d59dbef..b4b5566 100755
+--- a/eagle.mk
++++ b/eagle.mk
+@@ -274,6 +274,3 @@ PRODUCT_PROPERTY_OVERRIDES += \
+ # call dalvik heap config
+ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-1024-dalvik-heap.mk)
+ 
+-# Include non-opensource parts
+-$(call inherit-product, vendor/sony/eagle/eagle-vendor-blobs.mk)
+-
+-- 
+1.9.1
+

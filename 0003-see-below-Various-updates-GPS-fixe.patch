@@ -1,0 +1,1338 @@
+From bfef58238bc7dc3bd2196311cf905f3b8a0ffa1e Mon Sep 17 00:00:00 2001
+From: erikcas <erikcas1972@gmail.com>
+Date: Tue, 28 Oct 2014 19:19:25 +0100
+Subject: [PATCH 03/11] (see below) Various updates + GPS fixe: * Fix GPS fix *
+ Fix FM radio * Sensors starting up (needs probably more config) * Create
+ persist dir for sensors
+
+Change-Id: I586dad1ea0c738bffe26f418d7af383c7e1567c9
+---
+ BoardConfig.mk                                     |  10 +-
+ cm.dependencies                                    |   7 +
+ eagle.mk                                           | 124 +++++----
+ full_eagle.mk                                      |  10 -
+ gps/gps.conf                                       |  17 +-
+ .../frameworks/base/core/res/res/values/config.xml | 283 +++++++++------------
+ rootdir/init.class_main.sh                         |  73 ++++++
+ rootdir/init.qcom.rc                               |  30 +++
+ rootdir/init.qcom.sh                               | 225 ++++++++++++++++
+ rootdir/init.sony.usb.rc                           |  12 +-
+ rootdir/system/etc/thermal-engine-8226.conf        |  33 +++
+ system.prop                                        |  69 +----
+ 12 files changed, 585 insertions(+), 308 deletions(-)
+ create mode 100644 rootdir/init.class_main.sh
+ create mode 100644 rootdir/init.qcom.sh
+ create mode 100644 rootdir/system/etc/thermal-engine-8226.conf
+
+diff --git a/BoardConfig.mk b/BoardConfig.mk
+index 09e93c1..91f51c2 100755
+--- a/BoardConfig.mk
++++ b/BoardConfig.mk
+@@ -61,9 +61,12 @@ TARGET_ENABLE_QC_AV_ENHANCEMENTS := true
+ # Audio
+ BOARD_USES_ALSA_AUDIO := true
+ 
++# Fm
++QCOM_FM_ENABLED := true
++
+ # Bluetooth
+-BOARD_HAVE_BLUETOOTH := true
+ BOARD_HAVE_BLUETOOTH_QCOM := true
++BLUETOOTH_HCI_USE_MCT := true
+ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/sony/eagle/bluetooth
+ 
+ # RIL
+@@ -71,7 +74,7 @@ BOARD_HAS_RIL_LEGACY_PAP := true
+ 
+ # Camera
+ COMMON_GLOBAL_CFLAGS += -DNEEDS_VECTORIMPL_SYMBOLS
+-BOARD_CAMERA_HAVE_ISO := true
++COMMON_GLOBAL_CFLAGS += -DSONY_CAM_PARAMS
+ USE_DEVICE_SPECIFIC_CAMERA := true
+ 
+ # Charger
+@@ -80,9 +83,6 @@ BOARD_CHARGER_ENABLE_SUSPEND := true
+ # Dumpstate
+ BOARD_LIB_DUMPSTATE := libdumpstate.sony
+ 
+-# GPS
+-TARGET_PROVIDES_GPS_LOC_API := true
+-
+ # Graphics
+ NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
+ OVERRIDE_RS_DRIVER := libRSDriver_adreno.so
+diff --git a/cm.dependencies b/cm.dependencies
+index 6665d1e..39e4833 100644
+--- a/cm.dependencies
++++ b/cm.dependencies
+@@ -39,5 +39,12 @@
+     "repository": "android_hardware_sony_DASH",
+     "target_path": "hardware/sony/DASH",
+     "branch": "cm-11.0"
++  },
++  {
++    "remote": "github",
++    "account": "CyanogenMod",
++    "repository": "android_hardware_qcom_fm",
++    "target_path": "hardware/qcom/fm",
++    "branch": "cm-11.0"
+   }
+ ]
+diff --git a/eagle.mk b/eagle.mk
+index 82e00fe..e5d2dac 100755
+--- a/eagle.mk
++++ b/eagle.mk
+@@ -13,42 +13,34 @@
+ # limitations under the License.
+ 
+ $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+-
+-# qcom common
++$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
++$(call inherit-product, vendor/sony/eagle/eagle-vendor.mk)
++$(call inherit-product, device/sony/common/resources.mk)
+ $(call inherit-product, device/sony/qcom-common/qcom-common.mk)
+-
+ COMMON_PATH := device/sony/eagle
+ 
+-DEVICE_PACKAGE_OVERLAYS += $(COMMON_PATH)/overlay
++DEVICE_PACKAGE_OVERLAYS += device/sony/eagle/overlay
+ 
+ BOARD_HAVE_RADIO := true
+ # Permissions
+ PRODUCT_COPY_FILES += \
+-    frameworks/native/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
+-    frameworks/native/data/etc/android.hardware.bluetooth_le.xml:system/etc/permissions/android.hardware.bluetooth_le.xml \
+-    frameworks/native/data/etc/android.hardware.camera.autofocus.xml:system/etc/permissions/android.hardware.camera.autofocus.xml \
+     frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
+     frameworks/native/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
+     frameworks/native/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
+-    frameworks/native/data/etc/android.hardware.nfc.hce.xml:system/etc/permissions/android.hardware.nfc.hce.xml \
+-    frameworks/native/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml \
+-    frameworks/native/data/etc/android.hardware.sensor.accelerometer.xml:system/etc/permissions/android.hardware.sensor.accelerometer.xml \
+-    frameworks/native/data/etc/android.hardware.sensor.compass.xml:system/etc/permissions/android.hardware.sensor.compass.xml \
+-    frameworks/native/data/etc/android.hardware.sensor.gyroscope.xml:system/etc/permissions/android.hardware.sensor.gyroscope.xml \
+     frameworks/native/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
+     frameworks/native/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+-    frameworks/native/data/etc/android.hardware.sensor.stepcounter.xml:system/etc/permissions/android.hardware.sensor.stepcounter.xml \
+-    frameworks/native/data/etc/android.hardware.sensor.stepdetector.xml:system/etc/permissions/android.hardware.sensor.stepdetector.xml \
+-    frameworks/native/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
+     frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
+     frameworks/native/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
+     frameworks/native/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
+     frameworks/native/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml \
++    frameworks/native/data/etc/android.hardware.bluetooth_le.xml:system/etc/permissions/android.hardware.bluetooth_le.xml \
+     frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
++    frameworks/native/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
++    frameworks/native/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
+     packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml \
+-    frameworks/native/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
+-    frameworks/native/data/etc/com.android.nfc_extras.xml:system/etc/permissions/com.android.nfc_extras.xml \
+-    frameworks/native/data/etc/com.nxp.mifare.xml:system/etc/permissions/com.nxp.mifare.xml \
++    frameworks/native/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml \
++    frameworks/native/data/etc/android.hardware.nfc.hce.xml:system/etc/permissions/android.hardware.nfc.hce.xml \
++    frameworks/native/data/etc/com.android.nfc_extras.xml:system/etc/permissions/com.android.nfc_extras.xml
+ 
+ # This device is xhdpi.
+ PRODUCT_AAPT_CONFIG := normal hdpi xhdpi
+@@ -63,6 +55,11 @@ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/twrp.fstab:recovery/root/etc/twrp.fstab \
+     $(COMMON_PATH)/rootdir/ueventd.qcom.rc:root/ueventd.qcom.rc
+ 
++PRODUCT_COPY_FILES += \
++    $(COMMON_PATH)/rootdir/init.class_main.sh:root/init.class_main.sh \
++    $(COMMON_PATH)/rootdir/system/etc/init.qcom.bt.sh:system/etc/init.qcom.bt.sh \
++    $(COMMON_PATH)/rootdir/system/etc/init.qcom.fm.sh:system/etc/init.qcom.fm.sh
++
+ # Keys and Touchscreens
+ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/system/usr/keylayout/gpio-keys.kl:system/usr/keylayout/gpio-keys.kl \
+@@ -71,8 +68,12 @@ PRODUCT_COPY_FILES += \
+ 
+ # Touchpad
+ PRODUCT_COPY_FILES += \
+-    $(LOCAL_PATH)/rootdir/system/usr/idc/qwerty2.idc:system/usr/idc/qwerty2.idc \
+-    $(LOCAL_PATH)/rootdir/system/usr/idc/qwerty.idc:system/usr/idc/qwerty.idc
++    $(COMMON_PATH)/rootdir/system/usr/idc/qwerty2.idc:system/usr/idc/qwerty2.idc \
++    $(COMMON_PATH)/rootdir/system/usr/idc/qwerty.idc:system/usr/idc/qwerty.idc
++
++# Thermal
++PRODUCT_COPY_FILES += \
++    $(COMMON_PATH)/rootdir/system/etc/thermal-engine-8226.conf:system/etc/thermal-engine-8226.conf
+ 
+ # Device specific part for two-stage boot
+ PRODUCT_COPY_FILES += \
+@@ -84,35 +85,38 @@ PRODUCT_PACKAGES += \
+ 
+ # Sbin
+ PRODUCT_COPY_FILES += \
+-    $(COMMON_PATH)/rootdir/charger:root/charger \
+     $(COMMON_PATH)/rootdir/sbin/wait4tad_static:root/sbin/wait4tad_static \
+     $(COMMON_PATH)/rootdir/sbin/tad_static:root/sbin/tad_static
+ 
++PRODUCT_PACKAGES += \
++    charger \
++    charger_res_images \
++    libnl_2 \
++    libtinyxml
++
+ # Audio
+ PRODUCT_PACKAGES += \
+-    audiod \
+-    audio.a2dp.default \
++    alsa.msm8226 \
++    audio_policy.msm8226 \
+     audio.primary.msm8226 \
+-    audio.r_submix.default \
++    audio.a2dp.default \
+     audio.usb.default \
+-    audio_policy.msm8226
++    audio.r_submix.default \
++    libaudio-resampler \
++    tinymix
+ 
+ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/system/etc/audio_effects.conf:system/etc/audio_effects.conf \
+     $(COMMON_PATH)/rootdir/system/etc/audio_policy.conf:system/etc/audio_policy.conf \
+     $(COMMON_PATH)/rootdir/system/etc/mixer_paths.xml:system/etc/mixer_paths.xml \
+ 
+-# Camera
+-PRODUCT_PACKAGES += \
+-    camera.qcom
+-
+ # Display
+ PRODUCT_PACKAGES += \
+     hwcomposer.msm8226 \
+     gralloc.msm8226 \
+     copybit.msm8226 \
+-    memtrack.msm8226 \
+-    liboverlay
++    libqdMetaData \
++    memtrack.msm8226
+ 
+ # Filesystem management tools
+ PRODUCT_PACKAGES += \
+@@ -123,16 +127,15 @@ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/system/etc/init.qcom.fm.sh:system/etc/init.qcom.fm.sh
+ 
+ # GPS
++PRODUCT_PACKAGES += \
++    gps.msm8226
++
+ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/gps/flp.conf:system/etc/flp.conf \
+     $(COMMON_PATH)/gps/gps.conf:system/etc/gps.conf \
+     $(COMMON_PATH)/gps/izat.conf:system/etc/izat.conf \
+     $(COMMON_PATH)/gps/sap.conf:system/etc/sap.conf
+ 
+-PRODUCT_PACKAGES += \
+-    com.qualcomm.location \
+-    gps.msm8226
+-
+ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/system/etc/msap.conf:system/etc/msap.conf \
+     $(COMMON_PATH)/rootdir/system/etc/sec_config:system/etc/sec_config
+@@ -148,7 +151,6 @@ PRODUCT_PACKAGES += \
+     NfcNci \
+     Tag \
+     com.android.nfc_extras
+-#    nfc_nci.msm8226 \
+ 
+ # NFCEE access control
+ NFCEE_ACCESS_PATH := $(COMMON_PATH)/rootdir/system/etc/nfcee_access.xml
+@@ -168,9 +170,7 @@ PRODUCT_COPY_FILES += \
+ 
+ # Sensors
+ PRODUCT_COPY_FILES += \
+-    $(COMMON_PATH)/rootdir/system/etc/sensor_def_qcomdev.conf:system/etc/sensor_def_qcomdev.conf \
+-    $(COMMON_PATH)/rootdir/system/etc/sensor_def_somc.conf:system/etc/sensor_def_somc.conf \
+-    $(COMMON_PATH)/rootdir/system/etc/sensors_calib.conf:system/etc/sensors_calib.conf \
++    $(COMMON_PATH)/rootdir/system/etc/sensor_def_qcomdev.conf:system/etc/sensor_def_qcomdev.conf
+ 
+ # System Monitor (Thermal Control)
+ PRODUCT_COPY_FILES += \
+@@ -178,6 +178,7 @@ PRODUCT_COPY_FILES += \
+ 
+ # USB
+ PRODUCT_PACKAGES += \
++    librs_jni \
+     com.android.future.usb.accessory
+ 
+ # WiFi
+@@ -185,6 +186,14 @@ PRODUCT_PACKAGES += \
+     mac-update \
+     wcnss_service
+ 
++PRODUCT_PACKAGES += \
++    qcom.fmradio \
++    libqcomfm_jni \
++    FM2 \
++    FMRecord
++
++PRODUCT_PACKAGES += qcmediaplayer
++
+ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/system/etc/wifi/wpa_supplicant_overlay.conf:system/etc/wifi/wpa_supplicant_overlay.conf \
+     $(COMMON_PATH)/rootdir/system/etc/wifi/p2p_supplicant_overlay.conf:system/etc/wifi/p2p_supplicant_overlay.conf
+@@ -205,26 +214,43 @@ ADDITIONAL_DEFAULT_PROPERTIES += \
+     ro.adb.secure=0 \
+     ro.debuggable=1 \
+ 
+-# Bluetooth
+-PRODUCT_PROPERTY_OVERRIDES += \
+-    ro.qualcomm.bt.hci_transport=smd
+-
+ # Display
+ PRODUCT_PROPERTY_OVERRIDES += \
+     ro.sf.lcd_density=240
+ 
++PRODUCT_PROPERTY_OVERRIDES += \
++    ro.qualcomm.cabl=0 \
++    persist.fuse_sdcard=true \
++    ro.cwm.enable_key_repeat=true \
++    persist.debug.wfd.enable=1 \
++    persist.sys.wfd.virtual=0 \
++    ro.qualcomm.bt.hci_transport=smd \
++    debug.composition.type=dyn
++
++PRODUCT_PROPERTY_OVERRIDES += \
++    qcom.audio.init=complete \
++    af.resampler.quality=255 \
++    persist.audio.fluence.mode=endfire \
++    persist.audio.vr.enable=false \
++    persist.audio.handset.mic=analog \
++    persist.audio.lowlatency.rec=false \
++    media.aac_51_output_enabled=true \
++    ro.qc.sdk.audio.ssr=false \
++    ro.qc.sdk.audio.fluencetype=none \
++    lpa.decode=true \
++    audio.gapless.playback.disable=true
++
+ # GPS
+ PRODUCT_PROPERTY_OVERRIDES += \
++    persist.gps.qmienabled=true \
+     ro.qc.sdk.izat.premium_enabled=1 \
+-    ro.qc.sdk.izat.service_mask=0x0 \
+-    persist.gps.qc_nlp_in_use=1 \
+-    persist.loc.nlp_name=com.qualcomm.services.location \
++    ro.qc.sdk.izat.service_mask=0x5 \
++    persist.gps.qc_nlp_in_use=0 \
+     ro.gps.agps_provider=1
+ 
+-# Radio
+ ifneq ($(BOARD_HAVE_RADIO),false)
+-    DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay-radio
+-    $(call inherit-product, $(LOCAL_PATH)/radio.mk)
++    DEVICE_PACKAGE_OVERLAYS += $(COMMON_PATH)/overlay-radio
++    $(call inherit-product, $(COMMON_PATH)/radio.mk)
+ endif
+ 
+ # SIM Props
+diff --git a/full_eagle.mk b/full_eagle.mk
+index f765a18..6199558 100755
+--- a/full_eagle.mk
++++ b/full_eagle.mk
+@@ -16,16 +16,6 @@
+ TARGET_SCREEN_HEIGHT := 960
+ TARGET_SCREEN_WIDTH := 540
+ 
+-# Torch
+-PRODUCT_PACKAGES := \
+-    Torch
+-
+-# Inherit from those products. Most specific first.
+-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+-
+-# Common Sony Resources
+-$(call inherit-product, device/sony/common/resources.mk)
+-
+ # Inherit from eagle device
+ $(call inherit-product, device/sony/eagle/eagle.mk)
+ 
+diff --git a/gps/gps.conf b/gps/gps.conf
+index 939a6e7..86e9f65 100644
+--- a/gps/gps.conf
++++ b/gps/gps.conf
+@@ -1,8 +1,8 @@
+ #Uncommenting these urls would only enable
+ #the power up auto injection and force injection(test case).
+-#XTRA_SERVER_1=http://xtra1.gpsonextra.net/xtra.bin
+-#XTRA_SERVER_2=http://xtra2.gpsonextra.net/xtra.bin
+-#XTRA_SERVER_3=http://xtra3.gpsonextra.net/xtra.bin
++XTRA_SERVER_1=http://xtra1.gpsonextra.net/xtra2.bin
++XTRA_SERVER_2=http://xtra2.gpsonextra.net/xtra2.bin
++XTRA_SERVER_3=http://xtra3.gpsonextra.net/xtra2.bin
+ 
+ # Error Estimate
+ # _SET = 1
+@@ -21,7 +21,7 @@ NTP_SERVER=time.gpsonextra.net
+ # DEBUG LEVELS: 0 - none, 1 - Error, 2 - Warning, 3 - Info
+ #               4 - Debug, 5 - Verbose
+ # If DEBUG_LEVEL is commented, Android's logging levels will be used
+-DEBUG_LEVEL = 4
++DEBUG_LEVEL = 3
+ 
+ # Intermediate position report, 1=enable, 0=disable
+ INTERMEDIATE_POS=0
+@@ -29,9 +29,6 @@ INTERMEDIATE_POS=0
+ # supl version 1.0
+ SUPL_VER=0x10000
+ 
+-# Emergency SUPL, 1=enable, 0=disable
+-SUPL_ES=1
+-
+ # GPS Capabilities bit mask
+ # SCHEDULING = 0x01
+ # MSB = 0x02
+@@ -39,7 +36,7 @@ SUPL_ES=1
+ # ON_DEMAND_TIME = 0x10
+ # GEOFENCE = 0x20
+ # default = ON_DEMAND_TIME | MSA | MSB | SCHEDULING | GEOFENCE
+-CAPABILITIES=0x33
++CAPABILITIES=0x37
+ 
+ # Accuracy threshold for intermediate positions
+ # less accurate positions are ignored, 0 for passing all positions
+@@ -52,8 +49,6 @@ CAPABILITIES=0x33
+ # FOR SUPL SUPPORT, set the following
+ # SUPL_HOST=supl.host.com or IP
+ # SUPL_PORT=1234
+-SUPL_HOST=supl.sonyericsson.com
+-SUPL_PORT=7275
+ 
+ # FOR C2K PDE SUPPORT, set the following
+ # C2K_HOST=c2k.pde.com or IP
+@@ -73,8 +68,6 @@ LPP_PROFILE = 0
+ ################################
+ # NMEA provider (1=Modem Processor, 0=Application Processor)
+ NMEA_PROVIDER=0
+-# Mark if it is a SGLTE target (1=SGLTE, 0=nonSGLTE)
+-SGLTE_TARGET=0
+ 
+ ##################################################
+ # Select Positioning Protocol on A-GLONASS system
+diff --git a/overlay/frameworks/base/core/res/res/values/config.xml b/overlay/frameworks/base/core/res/res/values/config.xml
+index 20b4617..9479c62 100755
+--- a/overlay/frameworks/base/core/res/res/values/config.xml
++++ b/overlay/frameworks/base/core/res/res/values/config.xml
+@@ -1,9 +1,7 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <!--
+ /*
+-** Copyright (c) 2013 The Linux Foundation. All rights reserved.
+-** Not a Contribution.
+-** Copyright 2009, The Android Open Source Project
++** Copyright 2013, The Android Open Source Project
+ **
+ ** Licensed under the Apache License, Version 2.0 (the "License");
+ ** you may not use this file except in compliance with the License.
+@@ -19,19 +17,17 @@
+ */
+ -->
+ 
+-<!-- These resources are around just to allow their values to be customized
+-     for different hardware and product builds.  Do not translate. -->
+-<resources>
+-
+-    <!-- Enables or disables fading edges when marquee is enabled in TextView. -->
+-    <bool name="config_ui_enableFadingMarquee">true</bool>
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++    <!-- Whether a software navigation bar should be shown. NOTE: in the future this may be
++         autodetected from the Configuration. -->
++    <bool name="config_showNavigationBar">true</bool>
+ 
+     <!-- List of regexpressions describing the interface (if any) that represent tetherable
+          USB interfaces.  If the device doesn't want to support tething over USB this should
+          be empty.  An example would be "usb.*" -->
+     <string-array translatable="false" name="config_tether_usb_regexs">
+-       <item>"usb\\d"</item>
+-       <item>"rndis\\d"</item>
++        <item>"usb\\d"</item>
++        <item>"rndis\\d"</item>
+     </string-array>
+ 
+     <!-- List of regexpressions describing the interface (if any) that represent tetherable
+@@ -45,59 +41,37 @@
+          bluetooth interfaces.  If the device doesn't want to support tethering over bluetooth this
+          should be empty. -->
+     <string-array translatable="false" name="config_tether_bluetooth_regexs">
+-        <item>"bt-pan"</item>
++            <item>"bnep\\d"</item>
++            <item>"bt-pan"</item>
+     </string-array>
+ 
+     <!-- Boolean indicating whether the wifi chipset has dual frequency band support -->
+-    <bool translatable="false" name="config_wifi_dual_band_support">false</bool>
++    <bool translatable="false" name="config_wifi_dual_band_support">true</bool>
+ 
+-    <!-- Boolean indicating whether the wifi chipset supports background scanning mechanism.
+-         This mechanism allows the host to remain in suspend state and the dongle to actively
+-         scan and wake the host when a configured SSID is detected by the dongle. This chipset
+-         capability can provide power savings when wifi needs to be always kept on. -->
++    <!-- Boolean indicating whether the wifi chipset has background scan support -->
+     <bool translatable="false" name="config_wifi_background_scan_support">true</bool>
+ 
+-    <!-- Flag indicating whether the we should enable the automatic brightness in Settings.
+-         Software implementation will be used if config_hardware_auto_brightness_available is not set -->
+-    <bool name="config_automatic_brightness_available">true</bool>
+-
+-    <!-- If this is true, the screen will come on when you unplug usb/power/whatever. -->
+-    <bool name="config_unplugTurnsOnScreen">true</bool>
+-
+-    <!-- If this is true, the screen will fade off. -->
+-    <bool name="config_animateScreenLights">true</bool>
++    <!-- When true use the linux /dev/input/event subsystem to detect the switch changes
++    on the headphone/microphone jack. When false use the older uevent framework -->
++    <bool name="config_useDevInputEventForAudioJack">true</bool>
+ 
+-    <!-- Indicate whether the SD card is accessible without removing the battery. -->
+-    <bool name="config_batterySdCardAccessibility">true</bool>
++    <!-- Is the device capable of hot swapping an ICC Card -->
++    <bool name="config_hotswapCapable">true</bool>
+ 
+-    <!-- Vibrator pattern for feedback about a long screen/key press -->
+-    <integer-array name="config_longPressVibePattern">
+-        <item>0</item>
+-        <item>80</item>
+-        <item>0</item>
+-        <item>0</item>
+-    </integer-array>
++    <!-- If this is true, the screen will come on when you plug/unplug usb/power/whatever. -->
++    <bool name="config_unplugTurnsOnScreen">true</bool>
+ 
+-    <!-- Vibrator pattern for feedback about touching a virtual key -->
+-    <integer-array name="config_virtualKeyVibePattern">
+-        <item>0</item>
+-        <item>80</item>
+-        <item>0</item>
+-        <item>0</item>
+-    </integer-array>
++    <!-- If this is true, the IME will be shown at screen on for keyguard password view -->
++    <bool name="kg_show_ime_at_screen_on">false</bool>
+ 
+-    <!-- Vibrator pattern for a very short but reliable vibration for soft keyboard tap -->
+-    <integer-array name="config_keyboardTapVibePattern">
+-        <item>80</item>
+-    </integer-array>
++    <!-- Allow the menu hard key to be disabled in LockScreen on some devices -->
++    <bool name="config_disableMenuKeyInLockScreen">true</bool>
+ 
+-    <!-- Vibrator pattern for feedback about hitting a scroll barrier -->
+-    <integer-array name="config_scrollBarrierVibePattern">
+-        <item>0</item>
+-        <item>80</item>
+-        <item>0</item>
+-        <item>0</item>
+-    </integer-array>
++    <!-- Do not translate!
++         The URL that should be sent in an x-wap-profile header with an HTTP request.
++         If the URL contains a '%s' format string then that substring will be replaced
++         with the value of Build.MODEL. -->
++    <string name="config_useragentprofile_url">http://uaprof.sonymobile.com/%sR401.xml</string>
+ 
+     <!-- Default color for notification LED. -->
+     <color name="config_defaultNotificationColor">#ffffffff</color>
+@@ -109,16 +83,40 @@
+     <integer name="config_defaultNotificationLedOff">6000</integer>
+ 
+     <!-- Is the notification LED intrusive? Used to decide if there should be a disable option -->
+-    <bool name="config_intrusiveNotificationLed">false</bool>
++    <bool name="config_intrusiveNotificationLed">true</bool>
+ 
+     <!-- Is the battery LED intrusive? Used to decide if there should be a disable option -->
+-    <bool name="config_intrusiveBatteryLed">false</bool>
++    <bool name="config_intrusiveBatteryLed">true</bool>
+ 
+     <!-- Does the battery LED support multiple colors? Used to decide if the user can change the colors -->
+     <bool name="config_multiColorBatteryLed">true</bool>
+ 
+-    <!-- Is the device capable of hot swapping an UICC Card -->
+-    <bool name="config_hotswapCapable">true</bool>
++    <bool name="config_syncstorageengine_masterSyncAutomatically">false</bool>
++
++    <!-- National language single shift tables to enable for SMS encoding.
++         Decoding is always enabled. 3GPP TS 23.038 states that this feature
++         should not be enabled until a formal request is issued by the relevant
++         national regulatory body. Array elements are codes from the table above.
++         Example 1: devices sold in Turkey must include table 1 to conform with
++           By-Law Number 27230. (http://www.btk.gov.tr/eng/pdf/2009/BY-LAW_SMS.pdf)
++         Example 2: devices sold in India should include tables 4 through 13
++           to enable use of the new Release 9 tables for Indic languages. -->
++    <integer-array name="config_sms_enabled_single_shift_tables">
++        <item>1</item>
++    </integer-array>
++
++    <!-- Minimum screen brightness setting allowed by the power manager.
++        The user is forbidden from setting the brightness below this level. -->
++    <integer name="config_screenBrightnessSettingMinimum">20</integer>
++
++    <!-- Screen brightness used to dim the screen when the user activity
++        timeout expires.  May be less than the minimum allowed brightness setting
++        that can be set by the user. -->
++    <integer name="config_screenBrightnessDim">20</integer>
++
++    <!-- Flag indicating whether the we should enable the automatic brightness in Settings.
++         Software implementation will be used if config_hardware_auto_brightness_available is not set -->
++    <bool name="config_automatic_brightness_available">true</bool>
+ 
+     <!-- Array of light sensor LUX values to define our levels for auto backlight brightness support.
+          The N entries of this array define N + 1 control points as follows:
+@@ -141,125 +139,94 @@
+ 
+          Must be overridden in platform specific overlays -->
+     <integer-array name="config_autoBrightnessLevels">
+-        <item>2</item>
+-        <item>5</item>
+         <item>10</item>
+-        <item>20</item>
+-        <item>50</item>
++        <item>30</item>
++        <item>60</item>
+         <item>100</item>
+-        <item>200</item>
+-        <item>500</item>
+-        <item>1000</item>
+-        <item>2000</item>
+-        <item>3000</item>
+-        <item>4000</item>
+-        <item>5000</item>
+-
++        <item>150</item>
++        <item>210</item>
++        <item>255</item>
+     </integer-array>
+ 
+-    <!-- Minimum screen brightness setting allowed by the power manager.
+-         The user is forbidden from setting the brightness below this level. -->
+-    <integer name="config_screenBrightnessSettingMinimum">180</integer>
+-
+-    <!-- Maximum screen brightness allowed by the power manager.
+-         The user is forbidden from setting the brightness above this level. -->
+-    <integer name="config_screenBrightnessSettingMaximum">255</integer>
+-
+-    <!-- Default screen brightness setting.
+-         Must be in the range specified by minimum and maximum. -->
+-    <integer name="config_screenBrightnessSettingDefault">200</integer>
+-
+-    <!-- Screen brightness used to dim the screen when the user activity
+-         timeout expires.  May be less than the minimum allowed brightness setting
+-         that can be set by the user. -->
+-    <integer name="config_screenBrightnessDim">160</integer>
+-
+     <!-- Array of output values for LCD backlight corresponding to the LUX values
+          in the config_autoBrightnessLevels array.  This array should have size one greater
+          than the size of the config_autoBrightnessLevels array.
+          The brightness values must be between 0 and 255 and be non-decreasing.
+          This must be overridden in platform specific overlays -->
+     <integer-array name="config_autoBrightnessLcdBacklightValues">
+-        <item>180</item>
+-        <item>187</item>
+-        <item>194</item>
+-        <item>201</item>
+-        <item>208</item>
+-        <item>215</item>
+-        <item>222</item>
+-        <item>229</item>
+-        <item>236</item>
+-        <item>243</item>
+-        <item>250</item>
+-        <item>252</item>
+-        <item>254</item>
++        <item>10</item>
++        <item>20</item>
++        <item>40</item>
++        <item>70</item>
++        <item>110</item>
++        <item>160</item>
++        <item>200</item>
+         <item>255</item>
+     </integer-array>
+ 
+-    <!-- Array of output values for button backlight corresponding to the LUX values
+-         in the config_autoBrightnessLevels array.  This array should have size one greater
+-         than the size of the config_autoBrightnessLevels array.
+-         The brightness values must be between 0 and 255 and be non-decreasing.
+-         This must be overridden in platform specific overlays -->
+-    <integer-array name="config_autoBrightnessButtonBacklightValues">
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-        <item>0</item>
+-    </integer-array>
+-
+-
+-    <!-- Whether a software navigation bar should be shown. NOTE: in the future this may be
+-         autodetected from the Configuration. -->
+-    <bool name="config_showNavigationBar">true</bool>
+-
+-    <!-- Base "touch slop" value used by ViewConfiguration as a
+-         movement threshold where scrolling should begin. -->
+-    <dimen name="config_viewConfigurationTouchSlop">11dp</dimen>
++    <!-- Package name(s) containing location provider support.
++         These packages can contain services implementing location providers,
++         such as the Geocode Provider, Network Location Provider, and
++         Fused Location Provider. They will each be searched for
++         service components implementing these providers.
++         It is strongly recommended that the packages explicitly named
++         below are on the system image, so that they will not map to
++         a 3rd party application.
++         The location framework also has support for installation
++         of new location providers at run-time. The new package does not
++         have to be explicitly listed here, however it must have a signature
++         that matches the signature of at least one package on this list.
++         -->
++    <string-array name="config_locationProviderPackageNames" translatable="false">
++        <!-- The standard AOSP fused location provider -->
++        <item>com.android.location.fused</item>
++        <item>com.google.android.location</item>
++    </string-array>
+ 
+     <!-- Safe headphone volume index. When music stream volume is below this index
+     the SPL on headphone output is compliant to EN 60950 requirements for portable music
+     players. -->
+-    <integer name="config_safe_media_volume_index">10</integer>
+-
+-    <!-- Whether WiFi display is supported by this device.
+-         There are many prerequisites for this feature to work correctly.
+-         Here are a few of them:
+-         * The WiFi radio must support WiFi P2P.
+-         * The WiFi radio must support concurrent connections to the WiFi display and
+-           to an access point.
+-         * The Audio Flinger audio_policy.conf file must specify a rule for the "r_submix"
+-           remote submix module.  This module is used to record and stream system
+-           audio output to the WiFi display encoder in the media server.
+-         * The remote submix module "audio.r_submix.default" must be installed on the device.
+-         * The device must be provisioned with HDCP keys (for protected content).
+-    -->
+-    <bool name="config_enableWifiDisplay">true</bool>
++    <integer name="config_safe_media_volume_index">8</integer>
+ 
+-    <!-- When true use the linux /dev/input/event subsystem to detect the switch changes
+-         on the headphone/microphone jack. When false use the older uevent framework. -->
+-    <bool name="config_useDevInputEventForAudioJack">true</bool>
++    <!-- Set to true if the wifi display supports compositing content stored
++         in gralloc protected buffers.  For this to be true, there must exist
++         a protected hardware path for surface flinger to composite and send
++         protected buffers to the wifi display video encoder.
+ 
+-    <!-- Defines the system property to set for performance profile xe: sys.cpu.modes. Leave it
+-         blank if the device do not support performance profiles -->
+-    <string name="config_perf_profile_prop" translatable="false">sys.perf.profile</string>
++         If this flag is false, we advise applications not to use protected
++         buffers (if possible) when presenting content to a wifi display because
++         the content may be blanked.
+ 
+-    <!-- When config_perf_profile_prop is defined, this value MUST be the index of
+-         one of the listes values in frameworks/base/core/res/res/values/cm_arrays.xml
+-         for "perf_profile_values" array. Leave it blank if the device do not support
+-         performance profiles  -->
+-    <string name="config_perf_profile_default_entry" translatable="false">1</string>
+-
+-    <!-- Configuration to enable non-default PDP during IWLAN -->
+-    <bool name="config_feature_iwlan_enabled">true</bool>
++         This flag controls whether the {@link Display#FLAG_SUPPORTS_PROTECTED_BUFFERS}
++         flag is set for wifi displays.
++    -->
++    <bool name="config_wifiDisplaySupportsProtectedBuffers">true</bool>
++
++    <bool name="config_enableTorch">true</bool>
++
++    <!-- Disable lockscreen rotation by default -->
++    <bool name="config_enableLockScreenRotation">true</bool>
++
++    <!-- Hardware 'face' keys present on the device, stored as a bit field.
++         This integer should equal the sum of the corresponding value for each
++         of the following keys present:
++             1 - Home
++             2 - Back
++             4 - Menu
++             8 - Assistant (search)
++            16 - App switch
++            32 - Camera
++         For example, a device with Home, Back and Menu keys would set this
++         config to 7. -->
++    <integer name="config_deviceHardwareKeys">32</integer>
++
++    <!-- SD card is hot-pluggable on this device -->
++     <bool name="config_batterySdCardAccessibility">true</bool>
++
++    <!-- Enable the option to check proximity sensor when deciding whether to
++         turn the screen on
++         NOTE ! - Enable for devices that have a fast response proximity sensor
++    -->
++    <bool name="config_proximityCheckOnWake">true</bool>
++    <integer name="config_proximityCheckTimeout">400</integer>
+ </resources>
+diff --git a/rootdir/init.class_main.sh b/rootdir/init.class_main.sh
+new file mode 100644
+index 0000000..e6151a5
+--- /dev/null
++++ b/rootdir/init.class_main.sh
+@@ -0,0 +1,73 @@
++#!/system/bin/sh
++# Copyright (c) 2013, The Linux Foundation. All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are met:
++#     * Redistributions of source code must retain the above copyright
++#       notice, this list of conditions and the following disclaimer.
++#     * Redistributions in binary form must reproduce the above copyright
++#       notice, this list of conditions and the following disclaimer in the
++#       documentation and/or other materials provided with the distribution.
++#     * Neither the name of The Linux Foundation nor
++#       the names of its contributors may be used to endorse or promote
++#       products derived from this software without specific prior written
++#       permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++# NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
++# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
++# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++#
++# start ril-daemon only for targets on which radio is present
++#
++baseband=`getprop ro.baseband`
++netmgr=`getprop ro.use_data_netmgrd`
++sgltecsfb=`getprop persist.radio.sglte_csfb`
++
++case "$baseband" in
++    "apq")
++    setprop ro.radio.noril yes
++    stop ril-daemon
++esac
++
++case "$baseband" in
++    "msm" | "csfb" | "svlte2a" | "mdm" | "sglte" | "sglte2" | "dsda2" | "unknown")
++    start qmuxd
++    case "$baseband" in
++        "svlte2a" | "csfb")
++          start qmiproxy
++        ;;
++        "sglte" | "sglte2" )
++          if [ "x$sgltecsfb" != "xtrue" ]; then
++              start qmiproxy
++          else
++              setprop persist.radio.voice.modem.index 0
++          fi
++        ;;
++        "dsda2")
++          setprop persist.radio.multisim.config dsda
++    esac
++
++    multisim=`getprop persist.radio.multisim.config`
++
++    if [ "$multisim" = "dsds" ] || [ "$multisim" = "dsda" ]; then
++        start ril-daemon1
++    elif [ "$multisim" = "tsts" ]; then
++        start ril-daemon1
++        start ril-daemon2
++    fi
++
++    case "$netmgr" in
++        "true")
++        start netmgrd
++    esac
++esac
+diff --git a/rootdir/init.qcom.rc b/rootdir/init.qcom.rc
+index a8105a2..bdb9356 100755
+--- a/rootdir/init.qcom.rc
++++ b/rootdir/init.qcom.rc
+@@ -23,6 +23,8 @@ on early-init
+     write /sys/block/mmcblk0/bdi/read_ahead_kb 512
+ 
+ on init
++    # Set permissions for persist partition
++    mkdir /persist 0771 system system
+     # See storage config details at http://source.android.com/tech/storage/
+     mkdir /mnt/shell/emulated 0700 shell shell
+     mkdir /storage/emulated 0555 root root
+@@ -139,6 +141,21 @@ on post-fs-data
+     # Create directory used by audio subsystem
+     mkdir /data/misc/audio 0770 audio audio
+ 
++    # Mounting of persist is moved to 'on emmc-fs' and 'on fs' sections
++    # We chown/chmod /persist again so because mount is run as root + defaults
++    chown system system /persist
++    chmod 0771 /persist
++    chmod 0664 /sys/devices/platform/msm_sdcc.1/polling
++    chmod 0664 /sys/devices/platform/msm_sdcc.2/polling
++    chmod 0664 /sys/devices/platform/msm_sdcc.3/polling
++    chmod 0664 /sys/devices/platform/msm_sdcc.4/polling
++
++    # Chown polling nodes as needed from UI running on system server
++    chown system system /sys/devices/platform/msm_sdcc.1/polling
++    chown system system /sys/devices/platform/msm_sdcc.2/polling
++    chown system system /sys/devices/platform/msm_sdcc.3/polling
++    chown system system /sys/devices/platform/msm_sdcc.4/polling
++
+     #Create directories for gpsone_daemon services
+     mkdir /data/misc/gpsone_d 0770 system gps
+ 
+@@ -243,6 +260,11 @@ service cnd /system/bin/cnd
+     class late_start
+     socket cnd stream 660 root inet
+ 
++service qcom-c_main-sh /system/bin/sh /init.class_main.sh
++    class main
++    user root
++    oneshot
++
+ service irsc_util /system/bin/logwrapper /system/bin/irsc_util "/etc/sec_config"
+     class main
+     user root
+@@ -252,6 +274,9 @@ service rmt_storage /system/bin/rmt_storage
+     class core
+     user root
+ 
++on property:ro.boot.emmc=true
++    start rmt_storage
++
+ service rfs_access /system/bin/rfs_access
+    class core
+    user system
+@@ -414,6 +439,11 @@ service fm_dl /system/bin/sh /system/etc/init.qcom.fm.sh
+     disabled
+     oneshot
+ 
++service qcom-sh /system/bin/sh /init.qcom.sh
++    class late_start
++    user root
++    oneshot
++
+ service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
+     class late_start
+ 
+diff --git a/rootdir/init.qcom.sh b/rootdir/init.qcom.sh
+new file mode 100644
+index 0000000..b3176b6
+--- /dev/null
++++ b/rootdir/init.qcom.sh
+@@ -0,0 +1,225 @@
++#!/system/bin/sh
++# Copyright (c) 2009-2013, The Linux Foundation. All rights reserved.
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions are met:
++#     * Redistributions of source code must retain the above copyright
++#       notice, this list of conditions and the following disclaimer.
++#     * Redistributions in binary form must reproduce the above copyright
++#       notice, this list of conditions and the following disclaimer in the
++#       documentation and/or other materials provided with the distribution.
++#     * Neither the name of The Linux Foundation nor
++#       the names of its contributors may be used to endorse or promote
++#       products derived from this software without specific prior written
++#       permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++# NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
++# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
++# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++#
++
++target=`getprop ro.board.platform`
++if [ -f /sys/devices/soc0/soc_id ]; then
++    platformid=`cat /sys/devices/soc0/soc_id`
++else
++    platformid=`cat /sys/devices/system/soc/soc0/id`
++fi
++#
++# Function to start sensors for DSPS enabled platforms
++#
++start_sensors()
++{
++    if [ -c /dev/msm_dsps -o -c /dev/sensors ]; then
++        chmod -h 775 /persist/sensors
++        chmod -h 664 /persist/sensors/sensors_settings
++        chown -h system.root /persist/sensors/sensors_settings
++
++        mkdir -p /data/misc/sensors
++        chmod -h 775 /data/misc/sensors
++
++        start sensors
++    fi
++}
++
++start_battery_monitor()
++{
++	if ls /sys/bus/spmi/devices/qpnp-bms-*/fcc_data ; then
++		chown -h root.system /sys/module/pm8921_bms/parameters/*
++		chown -h root.system /sys/module/qpnp_bms/parameters/*
++		chown -h root.system /sys/bus/spmi/devices/qpnp-bms-*/fcc_data
++		chown -h root.system /sys/bus/spmi/devices/qpnp-bms-*/fcc_temp
++		chown -h root.system /sys/bus/spmi/devices/qpnp-bms-*/fcc_chgcyl
++		chmod -h 0660 /sys/module/qpnp_bms/parameters/*
++		chmod -h 0660 /sys/module/pm8921_bms/parameters/*
++		mkdir -p /data/bms
++		chown -h root.system /data/bms
++		chmod -h 0770 /data/bms
++		start battery_monitor
++	fi
++}
++
++start_charger_monitor()
++{
++	if ls /sys/module/qpnp_charger/parameters/charger_monitor; then
++		chown -h root.system /sys/module/qpnp_charger/parameters/*
++		chown -h root.system /sys/class/power_supply/battery/input_current_max
++		chown -h root.system /sys/class/power_supply/battery/input_current_trim
++		chown -h root.system /sys/class/power_supply/battery/input_current_settled
++		chown -h root.system /sys/class/power_supply/battery/voltage_min
++		chmod -h 0664 /sys/class/power_supply/battery/input_current_max
++		chmod -h 0664 /sys/class/power_supply/battery/input_current_trim
++		chmod -h 0664 /sys/class/power_supply/battery/input_current_settled
++		chmod -h 0664 /sys/class/power_supply/battery/voltage_min
++		chmod -h 0664 /sys/module/qpnp_charger/parameters/charger_monitor
++		start charger_monitor
++	fi
++}
++
++baseband=`getprop ro.baseband`
++izat_premium_enablement=`getprop ro.qc.sdk.izat.premium_enabled`
++izat_service_mask=`getprop ro.qc.sdk.izat.service_mask`
++
++#
++# Suppress default route installation during RA for IPV6; user space will take
++# care of this
++# exception default ifc
++for file in /proc/sys/net/ipv6/conf/*
++do
++  echo 0 > $file/accept_ra_defrtr
++done
++echo 1 > /proc/sys/net/ipv6/conf/default/accept_ra_defrtr
++
++#
++# Start gpsone_daemon for SVLTE Type I & II devices
++#
++
++# platform id 126 is for MSM8974
++case "$platformid" in
++        "126")
++        start gpsone_daemon
++esac
++case "$target" in
++        "msm7630_fusion")
++        start gpsone_daemon
++esac
++case "$baseband" in
++        "svlte2a")
++        start gpsone_daemon
++        start bridgemgrd
++        ;;
++        "sglte" | "sglte2")
++        start gpsone_daemon
++        ;;
++esac
++
++let "izat_service_gtp_wifi=$izat_service_mask & 2#1"
++let "izat_service_gtp_wwan_lite=($izat_service_mask & 2#10)>>1"
++let "izat_service_pip=($izat_service_mask & 2#100)>>2"
++
++if [ "$izat_premium_enablement" -ne 1 ]; then
++    if [ "$izat_service_gtp_wifi" -ne 0 ]; then
++# GTP WIFI bit shall be masked by the premium service flag
++        let "izat_service_gtp_wifi=0"
++    fi
++fi
++
++if [ "$izat_service_gtp_wwan_lite" -ne 0 ] ||
++   [ "$izat_service_gtp_wifi" -ne 0 ] ||
++   [ "$izat_service_pip" -ne 0 ]; then
++# OS Agent would also be started under the same condition
++    start location_mq
++fi
++
++if [ "$izat_service_gtp_wwan_lite" -ne 0 ] ||
++   [ "$izat_service_gtp_wifi" -ne 0 ]; then
++# start GTP services shared by WiFi and WWAN Lite
++    start xtwifi_inet
++    start xtwifi_client
++fi
++
++if [ "$izat_service_gtp_wifi" -ne 0 ] ||
++   [ "$izat_service_pip" -ne 0 ]; then
++# advanced WiFi scan service shared by WiFi and PIP
++    start lowi-server
++fi
++
++if [ "$izat_service_pip" -ne 0 ]; then
++# PIP services
++    start quipc_main
++    start quipc_igsn
++fi
++
++# [CCI] YAS Sensor lib
++#start_sensors
++
++case "$target" in
++    "msm7630_surf" | "msm7630_1x" | "msm7630_fusion")
++        if [ -f /sys/devices/soc0/hw_platform ]; then
++            value=`cat /sys/devices/soc0/hw_platform`
++        else
++            value=`cat /sys/devices/system/soc/soc0/hw_platform`
++        fi
++        case "$value" in
++            "Fluid")
++             start profiler_daemon;;
++        esac
++        ;;
++    "msm8660" )
++        if [ -f /sys/devices/soc0/hw_platform ]; then
++            platformvalue=`cat /sys/devices/soc0/hw_platform`
++        else
++            platformvalue=`cat /sys/devices/system/soc/soc0/hw_platform`
++        fi
++        case "$platformvalue" in
++            "Fluid")
++                start profiler_daemon;;
++        esac
++        ;;
++    "msm8960")
++        case "$baseband" in
++            "msm")
++                start_battery_monitor;;
++        esac
++
++        if [ -f /sys/devices/soc0/hw_platform ]; then
++            platformvalue=`cat /sys/devices/soc0/hw_platform`
++        else
++            platformvalue=`cat /sys/devices/system/soc/soc0/hw_platform`
++        fi
++        case "$platformvalue" in
++             "Fluid")
++                 start profiler_daemon;;
++             "Liquid")
++                 start profiler_daemon;;
++        esac
++        ;;
++    "msm8974")
++        platformvalue=`cat /sys/devices/soc0/hw_platform`
++        case "$platformvalue" in
++             "Fluid")
++                 start profiler_daemon;;
++             "Liquid")
++                 start profiler_daemon;;
++        esac
++        case "$baseband" in
++            "msm")
++                start_battery_monitor
++                ;;
++        esac
++        start_charger_monitor
++        ;;
++    "msm8226")
++        start_charger_monitor
++        ;;
++    "msm8610")
++        start_charger_monitor
++        ;;
++esac
+diff --git a/rootdir/init.sony.usb.rc b/rootdir/init.sony.usb.rc
+index 7b64817..ec67db8 100755
+--- a/rootdir/init.sony.usb.rc
++++ b/rootdir/init.sony.usb.rc
+@@ -28,7 +28,7 @@ on property:sys.usb.config=mtp
+     stop adbd
+     write /sys/class/android_usb/android0/enable 0
+     write /sys/class/android_usb/android0/idVendor 0FCE
+-    write /sys/class/android_usb/android0/idProduct 01A9
++    write /sys/class/android_usb/android0/idProduct 01AA
+     write /sys/class/android_usb/android0/bDeviceClass 0
+     write /sys/class/android_usb/android0/bDeviceSubClass 0
+     write /sys/class/android_usb/android0/bDeviceProtocol 0
+@@ -39,7 +39,7 @@ on property:sys.usb.config=mtp
+ on property:sys.usb.config=mtp,adb
+     write /sys/class/android_usb/android0/enable 0
+     write /sys/class/android_usb/android0/idVendor 0FCE
+-    write /sys/class/android_usb/android0/idProduct 51A9
++    write /sys/class/android_usb/android0/idProduct 51AA
+     write /sys/class/android_usb/android0/bDeviceClass 0
+     write /sys/class/android_usb/android0/bDeviceSubClass 0
+     write /sys/class/android_usb/android0/bDeviceProtocol 0
+@@ -53,7 +53,7 @@ on property:sys.usb.config=rndis
+     stop adbd
+     write /sys/class/android_usb/android0/enable 0
+     write /sys/class/android_usb/android0/idVendor 0FCE
+-    write /sys/class/android_usb/android0/idProduct 71A9
++    write /sys/class/android_usb/android0/idProduct 71AA
+     write /sys/class/android_usb/android0/bDeviceClass 239
+     write /sys/class/android_usb/android0/bDeviceSubClass 2
+     write /sys/class/android_usb/android0/bDeviceProtocol 1
+@@ -64,7 +64,7 @@ on property:sys.usb.config=rndis
+ on property:sys.usb.config=rndis,adb
+     write /sys/class/android_usb/android0/enable 0
+     write /sys/class/android_usb/android0/idVendor 0FCE
+-    write /sys/class/android_usb/android0/idProduct 81A9
++    write /sys/class/android_usb/android0/idProduct 81AA
+     write /sys/class/android_usb/android0/bDeviceClass 239
+     write /sys/class/android_usb/android0/bDeviceSubClass 2
+     write /sys/class/android_usb/android0/bDeviceProtocol 1
+@@ -78,7 +78,7 @@ on property:sys.usb.config=ptp
+     stop adbd
+     write /sys/class/android_usb/android0/enable 0
+     write /sys/class/android_usb/android0/idVendor 0FCE
+-    write /sys/class/android_usb/android0/idProduct 91A9
++    write /sys/class/android_usb/android0/idProduct 91AA
+     write /sys/class/android_usb/android0/bDeviceClass 0
+     write /sys/class/android_usb/android0/bDeviceSubClass 0
+     write /sys/class/android_usb/android0/bDeviceProtocol 0
+@@ -89,7 +89,7 @@ on property:sys.usb.config=ptp
+ on property:sys.usb.config=ptp,adb
+     write /sys/class/android_usb/android0/enable 0
+     write /sys/class/android_usb/android0/idVendor 0FCE
+-    write /sys/class/android_usb/android0/idProduct A1A9
++    write /sys/class/android_usb/android0/idProduct A1AA
+     write /sys/class/android_usb/android0/bDeviceClass 0
+     write /sys/class/android_usb/android0/bDeviceSubClass 0
+     write /sys/class/android_usb/android0/bDeviceProtocol 0
+diff --git a/rootdir/system/etc/thermal-engine-8226.conf b/rootdir/system/etc/thermal-engine-8226.conf
+new file mode 100644
+index 0000000..66442cc
+--- /dev/null
++++ b/rootdir/system/etc/thermal-engine-8226.conf
+@@ -0,0 +1,33 @@
++debug
++sampling         5000
++
++[CPU0-1_MONITOR]
++algo_type        monitor
++sensor           cpu0-1
++sampling         1000
++thresholds       120000
++thresholds_clr   115000
++actions          shutdown
++action_info      5000
++
++[CPU2-3_MONITOR]
++algo_type        monitor
++sensor           cpu2-3
++sampling         1000
++thresholds       120000
++thresholds_clr   115000
++actions          shutdown
++action_info      5000
++
++[SS-POPMEM]
++disable 1 
++
++[TSENSOR3_MONITOR]
++algo_type        monitor
++sensor           tsens_tz_sensor3
++sampling         1000
++thresholds       70000
++thresholds_clr   55000
++actions          cpu
++action_info      787200
++
+diff --git a/system.prop b/system.prop
+index d573aee..501a6da 100755
+--- a/system.prop
++++ b/system.prop
+@@ -1,65 +1,7 @@
+ #
+-# system.prop for msm8226
++# system.prop for eagle
+ #
+ 
+-debug.mdpcomp.logs=0
+-persist.demo.hdmirotationlock=false
+-
+-#
+-# system props for the data modules
+-#
+-ro.use_data_netmgrd=true
+-ro.data.large_tcp_window_size=true
+-
+-#system props for time-services
+-persist.timed.enable=true
+-
+-#
+-# system prop for opengles version
+-#
+-# 196608 is decimal for 0x30000 to report version 3
+-ro.opengles.version=196608
+-
+-#
+-#snapdragon value add features
+-#
+-##fluencetype can be "fluence" or "fluencepro" or "none"
+-ro.qc.sdk.audio.fluencetype=none
+-persist.audio.fluence.voicecall=true
+-persist.audio.fluence.voicerec=false
+-persist.audio.fluence.speaker=true
+-
+-#property to enable user to access Google WFD settings
+-persist.debug.wfd.enable=1
+-##property to choose between virtual/external wfd display
+-persist.sys.wfd.virtual=0
+-
+-#use VERY_HIGH_QUALITY for audio resampler
+-af.resampler.quality=4
+-
+-#Buffer size in kbytes for compress offload playback
+-audio.offload.buffer.size.kb=32
+-
+-#Enable offload audio video playback by default
+-av.offload.enable=false
+-
+-#enable dsp gapless mode by default
+-audio.offload.gapless.enabled=true
+-
+-# aDSP sensors
+-ro.qualcomm.sensors.qmd=true
+-debug.qualcomm.sns.hal=w
+-ro.qc.sdk.sensors.gestures=false
+-ro.qc.sensors.max_accel_rate=false
+-ro.qc.sensors.max_gyro_rate=false
+-ro.qc.sensors.max_mag_rate=false
+-ro.qualcomm.sensors.pedometer=true
+-ro.qualcomm.sensors.pam=false
+-ro.qualcomm.sensors.scrn_ortn=false
+-ro.qc.sensors.step_detector=true
+-ro.qc.sensors.step_counter=true
+-ro.qualcomm.sensors.georv=true
+-
+ rild.libargs=-d /dev/smd0
+ persist.rild.nitz_plmn=
+ persist.rild.nitz_long_ons_0=
+@@ -70,12 +12,3 @@ persist.rild.nitz_short_ons_0=
+ persist.rild.nitz_short_ons_1=
+ persist.rild.nitz_short_ons_2=
+ persist.rild.nitz_short_ons_3=
+-ril.subscription.types=NV,RUIM
+-DEVICE_PROVISIONED=1
+-persist.radio.msgtunnel.start=false
+-# Start in cdma mode
+-ro.telephony.default_network=9
+-
+-# Disable strict mode
+-persist.sys.strictmode.visual=0
+-persist.sys.strictmode.disable=1
+-- 
+1.9.1
+

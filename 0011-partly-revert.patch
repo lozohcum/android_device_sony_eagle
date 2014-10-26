@@ -1,0 +1,30 @@
+From f80c05a31bca5053cf1fe2e415382f35a696fa4a Mon Sep 17 00:00:00 2001
+From: erikcas <erikcas1972@gmail.com>
+Date: Wed, 29 Oct 2014 20:21:19 +0100
+Subject: [PATCH 11/11] partly revert
+
+Change-Id: I56c8b51c83abe6da8896b5efdfaf457bcbf55234
+---
+ eagle.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/eagle.mk b/eagle.mk
+index 6d33f21..46414e6 100755
+--- a/eagle.mk
++++ b/eagle.mk
+@@ -14,7 +14,6 @@
+ 
+ 
+ $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+-$(call inherit-product, vendor/sony/eagle/eagle-vendor.mk)
+ $(call inherit-product, device/sony/qcom-common/qcom-common.mk)
+ 
+ COMMON_PATH := device/sony/eagle
+@@ -269,3 +268,4 @@ PRODUCT_PROPERTY_OVERRIDES += \
+ # call dalvik heap config
+ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-1024-dalvik-heap.mk)
+ 
++$(call inherit-product, vendor/sony/eagle/eagle-vendor.mk)
+-- 
+1.9.1
+

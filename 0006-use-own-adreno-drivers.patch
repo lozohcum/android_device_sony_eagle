@@ -1,0 +1,26 @@
+From 92538febeebe1f7e143687631e53b5b7b7c55d44 Mon Sep 17 00:00:00 2001
+From: erikcas <erikcas1972@gmail.com>
+Date: Tue, 28 Oct 2014 22:01:55 +0100
+Subject: [PATCH 06/11] use own adreno drivers
+
+Change-Id: Ie26e0cbde7714b4ff76a90dec5f19c6d3c6f357c
+---
+ eagle.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/eagle.mk b/eagle.mk
+index e5d2dac..308ca87 100755
+--- a/eagle.mk
++++ b/eagle.mk
+@@ -12,6 +12,8 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
++TARGET_PROVIDES_ADRENO_DRIVER := true
++
+ $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+ $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+ $(call inherit-product, vendor/sony/eagle/eagle-vendor.mk)
+-- 
+1.9.1
+

@@ -1,0 +1,26 @@
+From 766bf97b23e1a0de8e97c0c14803838c8185100d Mon Sep 17 00:00:00 2001
+From: erikcas <erikcas1972@gmail.com>
+Date: Tue, 28 Oct 2014 20:49:41 +0100
+Subject: [PATCH 05/11] BoardConfig: Set USE_CAMERA_STUB false
+
+Change-Id: I5e3f0b73c8c5158ea79cf18600743992dc311bc7
+---
+ BoardConfig.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/BoardConfig.mk b/BoardConfig.mk
+index 91f51c2..fbe2556 100755
+--- a/BoardConfig.mk
++++ b/BoardConfig.mk
+@@ -18,6 +18,8 @@ include device/sony/common/BoardConfigCommon.mk
+ # inherit from qcom-common
+ include device/sony/qcom-common/BoardConfigCommon.mk
+ 
++USE_CAMERA_STUB := false
++
+ # Assert
+ TARGET_OTA_ASSERT_DEVICE := D2303,D2305,D2306,eagle
+ 
+-- 
+1.9.1
+

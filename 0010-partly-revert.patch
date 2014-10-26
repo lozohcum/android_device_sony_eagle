@@ -1,0 +1,65 @@
+From 733b8f9cbf5e5b70fa8623139d5819ef24871ca7 Mon Sep 17 00:00:00 2001
+From: erikcas <erikcas1972@gmail.com>
+Date: Wed, 29 Oct 2014 20:18:07 +0100
+Subject: [PATCH 10/11] partly revert
+
+Change-Id: Ia65f6b0316d09f11c9605a020e1fe41f34d4be9e
+---
+ eagle.mk      |  7 +------
+ full_eagle.mk | 10 ++++++++++
+ 2 files changed, 11 insertions(+), 6 deletions(-)
+ mode change 100755 => 100644 full_eagle.mk
+
+diff --git a/eagle.mk b/eagle.mk
+index b4b5566..6d33f21 100755
+--- a/eagle.mk
++++ b/eagle.mk
+@@ -14,10 +14,9 @@
+ 
+ 
+ $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+ $(call inherit-product, vendor/sony/eagle/eagle-vendor.mk)
+-$(call inherit-product, device/sony/common/resources.mk)
+ $(call inherit-product, device/sony/qcom-common/qcom-common.mk)
++
+ COMMON_PATH := device/sony/eagle
+ 
+ DEVICE_PACKAGE_OVERLAYS += device/sony/eagle/overlay
+@@ -186,10 +185,6 @@ PRODUCT_COPY_FILES += \
+ PRODUCT_COPY_FILES += \
+     $(COMMON_PATH)/rootdir/system/etc/sysmon.cfg:system/etc/sysmon.cfg
+ 
+-# Torch
+-PRODUCT_PACKAGES := \
+-    Torch
+-
+ # USB
+ PRODUCT_PACKAGES += \
+     librs_jni \
+diff --git a/full_eagle.mk b/full_eagle.mk
+old mode 100755
+new mode 100644
+index 6199558..f765a18
+--- a/full_eagle.mk
++++ b/full_eagle.mk
+@@ -16,6 +16,16 @@
+ TARGET_SCREEN_HEIGHT := 960
+ TARGET_SCREEN_WIDTH := 540
+ 
++# Torch
++PRODUCT_PACKAGES := \
++    Torch
++
++# Inherit from those products. Most specific first.
++$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
++
++# Common Sony Resources
++$(call inherit-product, device/sony/common/resources.mk)
++
+ # Inherit from eagle device
+ $(call inherit-product, device/sony/eagle/eagle.mk)
+ 
+-- 
+1.9.1
+

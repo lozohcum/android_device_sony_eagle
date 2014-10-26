@@ -1,0 +1,25 @@
+From 75124d37baa9c63db0d31136af94939e5be3cf3f Mon Sep 17 00:00:00 2001
+From: Olivier <yves.olli@gmail.com>
+Date: Sun, 20 Jul 2014 19:29:13 +0200
+Subject: [PATCH 02/11] init: provide haptic feedback before entering recovery
+
+Change-Id: Id3d5d5f1239e60a44abd2075e0f3651937563187
+---
+ combinedroot/init.sh | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/combinedroot/init.sh b/combinedroot/init.sh
+index 0fc3a0f..1f872de 100644
+--- a/combinedroot/init.sh
++++ b/combinedroot/init.sh
+@@ -27,6 +27,7 @@ busybox mount -t proc proc /proc
+ busybox mount -t sysfs sysfs /sys
+ 
+ # trigger amber LED
++busybox echo 100 > ${BOOTREC_VIBRATOR}
+ busybox echo 255 > ${BOOTREC_LED_RED}
+ busybox echo 0 > ${BOOTREC_LED_GREEN}
+ busybox echo 255 > ${BOOTREC_LED_BLUE}
+-- 
+1.9.1
+
