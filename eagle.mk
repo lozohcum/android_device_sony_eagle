@@ -90,8 +90,6 @@ PRODUCT_COPY_FILES += \
 
 # Audio
 PRODUCT_PACKAGES += \
-# Audio
-PRODUCT_PACKAGES += \
     audio.primary.msm8226 \
     audio_policy.msm8226 \
     audio.a2dp.default \
@@ -106,6 +104,7 @@ PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/system/etc/mixer_paths.xml:system/etc/mixer_paths.xml \
 
 # Camera
+PRODUCT_PACKAGES += \
     camera.qcom
 
 # Display
