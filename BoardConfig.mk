@@ -18,6 +18,8 @@ include device/sony/common/BoardConfigCommon.mk
 # inherit from qcom-common
 include device/sony/qcom-common/BoardConfigCommon.mk
 
+USE_CAMERA_STUB := false
+
 # Assert
 TARGET_OTA_ASSERT_DEVICE := D2303,D2305,D2306,eagle
 
