@@ -16,16 +16,6 @@
 TARGET_SCREEN_HEIGHT := 960
 TARGET_SCREEN_WIDTH := 540
 
-# Torch
-PRODUCT_PACKAGES := \
-    Torch
-
-# Inherit from those products. Most specific first.
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-
-# Common Sony Resources
-$(call inherit-product, device/sony/common/resources.mk)
-
 # Inherit from eagle device
 $(call inherit-product, device/sony/eagle/eagle.mk)
 
