@@ -16,23 +16,6 @@
 TARGET_SCREEN_HEIGHT := 960
 TARGET_SCREEN_WIDTH := 540
 
-# Torch
-PRODUCT_PACKAGES := \
-    Torch
-
-#Add omni apns
-PRODUCT_COPY_FILES += \
-       vendor/omni/prebuilt/etc/apns-conf.xml:system/etc/apns-conf.xml
-
-# Inherit from those products. Most specific first.
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-
-# Inherit from our omni product configuration
-$(call inherit-product, vendor/omni/config/common.mk)
-
-# Common Sony Resources
-$(call inherit-product, device/sony/common/resources.mk)
-
 # Inherit from eagle device
 $(call inherit-product, device/sony/eagle/eagle.mk)
 
