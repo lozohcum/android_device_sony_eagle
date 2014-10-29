@@ -32,10 +32,5 @@
    "repository": "android_hardware_qcom_gps",
    "target_path": "hardware/qcom/gps",
    "revision": "android-4.4"
- },
-  {
-    "repository": "android_hardware_qcom_fm",
-    "target_path": "hardware/qcom/fm",
-    "revision": "cm-11.0"
-  }
+ }
 ]
