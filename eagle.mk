@@ -14,10 +14,9 @@
 
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 $(call inherit-product, vendor/sony/eagle/eagle-vendor.mk)
-$(call inherit-product, device/sony/common/resources.mk)
 $(call inherit-product, device/sony/qcom-common/qcom-common.mk)
+
 COMMON_PATH := device/sony/eagle
 
 DEVICE_PACKAGE_OVERLAYS += device/sony/eagle/overlay
@@ -185,10 +184,6 @@ PRODUCT_COPY_FILES += \
 # System Monitor (Thermal Control)
 PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/rootdir/system/etc/sysmon.cfg:system/etc/sysmon.cfg
-
-# Torch
-PRODUCT_PACKAGES := \
-    Torch
 
 # USB
 PRODUCT_PACKAGES += \
