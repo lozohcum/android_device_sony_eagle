@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TARGET_PROVIDES_ADRENO_DRIVER := true
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
@@ -24,6 +23,7 @@ COMMON_PATH := device/sony/eagle
 DEVICE_PACKAGE_OVERLAYS += device/sony/eagle/overlay
 
 BOARD_HAVE_RADIO := true
+
 # Permissions
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.camera.autofocus.xml:system/etc/permissions/android.hardware.camera.autofocus.xml \
