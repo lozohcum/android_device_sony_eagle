@@ -90,7 +90,7 @@ void vendor_load_properties()
     if (strstr(modelnumber, "D2302")) {
         property_set("ro.build.description", "D2302-user 18.3.C.0.37 2n9_bg release-keys");
         property_set("ro.build.fingerprint", "Sony/D2302/D2302:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys");
-    } else if (strstr(modelnumber, "D2303)) {
+    } else if (strstr(modelnumber, "D2303")) {
         property_set("ro.build.description", "D2303-user 18.3.C.0.37 2n9_bg release-keys");
         property_set("ro.build.fingerprint", "Sony/D2303/D2303:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys");
     } else if (strstr(modelnumber, "D2305")) {
