@@ -1,47 +1,11 @@
-# Copyright (C) 2014 The CyanogenMod Project
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Inherit Omni GSM telephony parts
+$(call inherit-product, vendor/omni/config/gsm.mk)
 
-# Screen resoultion in Pixels.
-TARGET_SCREEN_HEIGHT := 960
-TARGET_SCREEN_WIDTH := 540
-
-# Torch
-PRODUCT_PACKAGES := \
-    Torch
-
-#Add omni apns
-PRODUCT_COPY_FILES += \
-       vendor/omni/prebuilt/etc/apns-conf.xml:system/etc/apns-conf.xml
-
-# Inherit from those products. Most specific first.
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-
-# Inherit from our omni product configuration
+# Inherit Omni product configuration
 $(call inherit-product, vendor/omni/config/common.mk)
 
-# Common Sony Resources
-$(call inherit-product, device/sony/common/resources.mk)
+# Inherit device configuration
+$(call inherit-product, device/sony/eagle/full_eagle.mk)
 
-# Inherit from eagle device
-$(call inherit-product, device/sony/eagle/eagle.mk)
-
-# Build fingerprints
-PRODUCT_BUILD_PROP_OVERRIDES += BUILD_UTC_DATE=0 
-
-# Set those variables here to overwrite the inherited values.
 PRODUCT_NAME := omni_eagle
 PRODUCT_DEVICE := eagle
-PRODUCT_BRAND := Sony
-PRODUCT_MANUFACTURER := Sony
-PRODUCT_MODEL := Xperia M2 LTE
