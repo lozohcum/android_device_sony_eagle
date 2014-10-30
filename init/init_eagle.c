@@ -87,17 +87,17 @@ void vendor_load_properties()
     property_set("ro.product.device", modelnumber);
     property_set("ro.product.model", modelnumber);
 
-    if (strstr(modelnumber, "C1905")) {
+    if (strstr(modelnumber, "D2302")) {
         property_set("ro.build.description", "D2302-user 18.3.C.0.37 2n9_bg release-keys");
         property_set("ro.build.fingerprint", "Sony/D2302/D2302:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys");
-    } else if (strstr(modelnumber, "C1904")) {
+    } else if (strstr(modelnumber, "D2303)) {
         property_set("ro.build.description", "D2303-user 18.3.C.0.37 2n9_bg release-keys");
         property_set("ro.build.fingerprint", "Sony/D2303/D2303:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys");
-    } else if (strstr(modelnumber, "C2005")) {
+    } else if (strstr(modelnumber, "D2305")) {
         ds_properties();
         property_set("ro.build.description", "D2305-user 18.3.C.0.37 2n9_bg release-keys");
         property_set("ro.build.fingerprint", "Sony/D2305/D2305:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys");
-    } else if (strstr(modelnumber, "C2004")) {
+    } else if (strstr(modelnumber, "D2306")) {
         ds_properties();
         property_set("ro.build.description", "D2306-user 18.3.C.0.37 2n9_bg release-keys");
         property_set("ro.build.fingerprint", "Sony/D2306/2306:4.4.2/18.3.C.0.37/2n9_bg:user/release-keys");
