@@ -8,6 +8,11 @@
    "target_path": "vendor/sony",
    "branch": "cm-11.0"
  },
+ {
+   "repository": "android_device_sony_msm8226-common",
+   "target_path": "vendor/sony/msm8226-common",
+   "branch": "cm-11.0"
+ },
   {
     "remote": "github",
     "account": "CyanogenMod",
