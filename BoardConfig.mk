@@ -23,6 +23,7 @@ TARGET_SPECIFIC_HEADER_PATH += device/sony/eagle/include
 # Kernel properties
 TARGET_KERNEL_SOURCE := kernel/sony/eagle
 TARGET_KERNEL_CONFIG := eagle_lte_defconfig
+TARGET_DTB_EXTRA_FLAGS := --force-v2
 
 # Hardware Features
 BOARD_HARDWARE_CLASS := device/sony/eagle/cmhw
