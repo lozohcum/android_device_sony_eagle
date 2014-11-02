@@ -15,15 +15,11 @@
 # inherit from qcom-common
 include device/sony/msm8226-common/BoardConfigCommon.mk
 
-# Platform
-BOARD_VENDOR_PLATFORM := eagle
-
 # Assert
 TARGET_OTA_ASSERT_DEVICE := D2302,D2303,D2305,D2306,eagle
 
 TARGET_SPECIFIC_HEADER_PATH += device/sony/eagle/include
 
-BOARD_CUSTOM_BOOTIMG_MK := device/sony/eagle/boot/custombootimg.mk
 # Kernel properties
 TARGET_KERNEL_SOURCE := kernel/sony/eagle
 TARGET_KERNEL_CONFIG := eagle_lte_defconfig
