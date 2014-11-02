@@ -7,10 +7,6 @@
    "repository": "proprietary_vendor_sony",
    "target_path": "vendor/sony",
    "branch": "cm-11.0"
- }, {
-   "repository": "proprietary_vendor_sony_eagle",
-   "target_path": "vendor/sony/eagle",
-   "branch": "cm-11.0"
  },
   {
     "remote": "github",
