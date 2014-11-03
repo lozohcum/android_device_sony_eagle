@@ -72,25 +72,21 @@
 
          Must be overridden in platform specific overlays -->
     <integer-array name="config_autoBrightnessLevels">
-        <item>2</item>
-        <item>5</item>
-        <item>10</item>
-        <item>20</item>
-        <item>50</item>
-        <item>100</item>
-        <item>200</item>
-        <item>500</item>
-        <item>1000</item>
-        <item>2000</item>
-        <item>3000</item>
-        <item>4000</item>
-        <item>5000</item>
-
+        <item>25</item>
+        <item>83</item>
+        <item>141</item>
+        <item>198</item>
+        <item>255</item>
+        <item>313</item>
+        <item>370</item>
+        <item>516</item>
+        <item>658</item>
+        <item>800</item>
     </integer-array>
 
     <!-- Minimum screen brightness setting allowed by the power manager.
          The user is forbidden from setting the brightness below this level. -->
-    <integer name="config_screenBrightnessSettingMinimum">180</integer>
+    <integer name="config_screenBrightnessSettingMinimum">10</integer>
 
     <!-- Maximum screen brightness allowed by the power manager.
          The user is forbidden from setting the brightness above this level. -->
@@ -98,12 +94,12 @@
 
     <!-- Default screen brightness setting.
          Must be in the range specified by minimum and maximum. -->
-    <integer name="config_screenBrightnessSettingDefault">200</integer>
+    <integer name="config_screenBrightnessSettingDefault">102</integer>
 
     <!-- Screen brightness used to dim the screen when the user activity
          timeout expires.  May be less than the minimum allowed brightness setting
          that can be set by the user. -->
-    <integer name="config_screenBrightnessDim">160</integer>
+    <integer name="config_screenBrightnessDim">10</integer>
 
     <!-- Array of output values for LCD backlight corresponding to the LUX values
          in the config_autoBrightnessLevels array.  This array should have size one greater
@@ -111,42 +107,17 @@
          The brightness values must be between 0 and 255 and be non-decreasing.
          This must be overridden in platform specific overlays -->
     <integer-array name="config_autoBrightnessLcdBacklightValues">
-        <item>180</item>
-        <item>187</item>
-        <item>194</item>
-        <item>201</item>
-        <item>208</item>
-        <item>215</item>
-        <item>222</item>
-        <item>229</item>
-        <item>236</item>
-        <item>243</item>
-        <item>250</item>
-        <item>252</item>
-        <item>254</item>
+        <item>24</item>
+        <item>25</item>
+        <item>49</item>
+        <item>72</item>
+        <item>95</item>
+        <item>118</item>
+        <item>142</item>
+        <item>165</item>
+        <item>195</item>
+        <item>225</item>
         <item>255</item>
-    </integer-array>
-
-    <!-- Array of output values for button backlight corresponding to the LUX values
-         in the config_autoBrightnessLevels array.  This array should have size one greater
-         than the size of the config_autoBrightnessLevels array.
-         The brightness values must be between 0 and 255 and be non-decreasing.
-         This must be overridden in platform specific overlays -->
-    <integer-array name="config_autoBrightnessButtonBacklightValues">
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
-        <item>0</item>
     </integer-array>
 
     <!-- Base "touch slop" value used by ViewConfiguration as a
