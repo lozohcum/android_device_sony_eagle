@@ -2,7 +2,7 @@
  {
    "repository": "android_kernel_sony_eagle",
    "target_path": "kernel/sony/eagle",
-   "branch": "cm-11.0"
+   "branch": "dev"
  }, {
    "repository": "proprietary_vendor_sony",
    "target_path": "vendor/sony",
