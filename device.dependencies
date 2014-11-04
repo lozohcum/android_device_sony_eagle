@@ -9,6 +9,11 @@
    "revision": "cm-11.0"
  },
  {
+   "repository": "android_device_sony_msm8226-common",
+   "target_path": "vendor/sony/msm8226-common",
+   "branch": "android-4.4"
+ },
+ {
    "repository": "android_device_sony_common",
    "target_path": "device/sony/common",
    "revision": "android-4.4"
