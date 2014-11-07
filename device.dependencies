@@ -2,7 +2,7 @@
  {
    "repository": "android_kernel_sony_eagle",
    "target_path": "kernel/sony/eagle",
-   "revision": "dev"
+   "revision": "luuk"
  }, {
    "repository": "proprietary_vendor_sony",
    "target_path": "vendor/sony",
